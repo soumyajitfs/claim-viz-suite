@@ -14,11 +14,9 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-function formatDate(dateStr: string): string {
+function displayDate(dateStr: string): string {
   if (!dateStr || dateStr === 'null') return '-';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  return dateStr;
 }
 
 function displayValue(value: string | number | null | undefined): string {
@@ -149,57 +147,55 @@ export default function ClaimLineDetails() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/20">
-                      <TableHead>Claim Line #</TableHead>
-                      <TableHead>EDI Line #</TableHead>
-                      <TableHead>Begin Date</TableHead>
-                      <TableHead>End Date</TableHead>
-                      <TableHead>Procedure Code</TableHead>
-                      <TableHead>Diagnosis Code</TableHead>
-                      <TableHead>Revenue Code</TableHead>
-                      <TableHead>Service ID</TableHead>
-                      <TableHead>RNC Code</TableHead>
-                      <TableHead>NDC</TableHead>
-                      <TableHead>POS Code</TableHead>
-                      <TableHead>Pre Auth</TableHead>
-                      <TableHead>RM Type</TableHead>
-                      <TableHead>Drug Units</TableHead>
-                      <TableHead>Drug UOM</TableHead>
-                      <TableHead>Count</TableHead>
-                      <TableHead>UOM</TableHead>
-                      <TableHead className="text-right">Charged Amt</TableHead>
-                      <TableHead className="text-right">Covered Amt</TableHead>
-                      <TableHead className="text-right">Paid Amt</TableHead>
-                      <TableHead className="text-right">Coinsurance</TableHead>
-                      <TableHead className="text-right">Deductible</TableHead>
+                      <TableHead>chrgAmt</TableHead>
+                      <TableHead>clmLnNum</TableHead>
+                      <TableHead>ediLnNum</TableHead>
+                      <TableHead>coinsAmt</TableHead>
+                      <TableHead>cvrdAmt</TableHead>
+                      <TableHead>dedAmt</TableHead>
+                      <TableHead>lnBeginDt</TableHead>
+                      <TableHead>lnEndDt</TableHead>
+                      <TableHead>ndc</TableHead>
+                      <TableHead>paidAmt</TableHead>
+                      <TableHead>posCd</TableHead>
+                      <TableHead>preAuthInd</TableHead>
+                      <TableHead>revnuCd</TableHead>
+                      <TableHead>rmTyp</TableHead>
+                      <TableHead>serviceId</TableHead>
+                      <TableHead>procCd</TableHead>
+                      <TableHead>diagCd</TableHead>
+                      <TableHead>rncCd</TableHead>
+                      <TableHead>drugUnits</TableHead>
+                      <TableHead>drugUom</TableHead>
+                      <TableHead>count</TableHead>
+                      <TableHead>uom</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {lineItems.map((item, index) => (
                       <TableRow key={`${item.clmId}-${item.clmLnNum}-${index}`} className="hover:bg-muted/50">
-                        <TableCell>
-                          <Badge variant="outline">{item.clmLnNum}</Badge>
-                        </TableCell>
+                        <TableCell className="font-medium">{item.chrgAmt}</TableCell>
+                        <TableCell>{item.clmLnNum}</TableCell>
                         <TableCell>{item.ediLnNum}</TableCell>
-                        <TableCell>{formatDate(item.lnBeginDt)}</TableCell>
-                        <TableCell>{formatDate(item.lnEndDt)}</TableCell>
-                        <TableCell className="font-mono text-sm">{displayValue(item.procCd)}</TableCell>
-                        <TableCell className="font-mono text-sm">{displayValue(item.diagCd)}</TableCell>
-                        <TableCell className="font-mono text-sm">{displayValue(item.revnuCd)}</TableCell>
-                        <TableCell className="font-mono text-sm">{displayValue(item.serviceId)}</TableCell>
-                        <TableCell className="font-mono text-sm">{displayValue(item.rncCd)}</TableCell>
-                        <TableCell className="font-mono text-sm">{displayValue(item.ndc)}</TableCell>
+                        <TableCell>{item.coinsAmt}</TableCell>
+                        <TableCell>{item.cvrdAmt}</TableCell>
+                        <TableCell>{item.dedAmt}</TableCell>
+                        <TableCell>{displayDate(item.lnBeginDt)}</TableCell>
+                        <TableCell>{displayDate(item.lnEndDt)}</TableCell>
+                        <TableCell>{displayValue(item.ndc)}</TableCell>
+                        <TableCell>{item.paidAmt}</TableCell>
                         <TableCell>{displayValue(item.posCd)}</TableCell>
                         <TableCell>{displayValue(item.preAuthInd)}</TableCell>
+                        <TableCell>{displayValue(item.revnuCd)}</TableCell>
                         <TableCell>{displayValue(item.rmTyp)}</TableCell>
+                        <TableCell>{displayValue(item.serviceId)}</TableCell>
+                        <TableCell>{displayValue(item.procCd)}</TableCell>
+                        <TableCell>{displayValue(item.diagCd)}</TableCell>
+                        <TableCell>{displayValue(item.rncCd)}</TableCell>
                         <TableCell>{displayValue(item.drugUnits)}</TableCell>
                         <TableCell>{displayValue(item.drugUom)}</TableCell>
                         <TableCell>{item.count}</TableCell>
                         <TableCell>{displayValue(item.uom)}</TableCell>
-                        <TableCell className="text-right font-medium">{formatCurrency(item.chrgAmt)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.cvrdAmt)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.paidAmt)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.coinsAmt)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.dedAmt)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
