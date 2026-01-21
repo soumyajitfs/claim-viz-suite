@@ -24,18 +24,27 @@ export interface ClaimData {
 export interface LineData {
   clmId: string;
   chrgAmt: number;
-  lineNum: number;
-  seqNum: number;
+  clmLnNum: number;
+  ediLnNum: number;
   coinsAmt: number;
-  allowAmt: number;
-  copayAmt: number;
-  beginDt: string;
-  endDt: string;
-  revCd: string;
+  cvrdAmt: number;
+  dedAmt: number;
+  lnBeginDt: string;
+  lnEndDt: string;
+  ndc: string;
+  paidAmt: number;
+  posCd: string;
+  preAuthInd: string;
+  revnuCd: string;
+  rmTyp: string;
+  serviceId: string;
   procCd: string;
   diagCd: string;
-  catCd: string;
-  qty: number;
+  rncCd: string;
+  drugUnits: string;
+  drugUom: string;
+  count: number;
+  uom: string;
 }
 
 export interface FilterState {
