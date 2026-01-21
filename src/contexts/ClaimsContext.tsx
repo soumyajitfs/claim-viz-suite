@@ -36,7 +36,7 @@ export function ClaimsProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useClaims() {
+export function useClaims(): ClaimsContextType {
   const context = useContext(ClaimsContext);
   if (context === undefined) {
     throw new Error('useClaims must be used within a ClaimsProvider');
