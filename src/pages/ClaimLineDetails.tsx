@@ -15,10 +15,15 @@ function formatCurrency(amount: number): string {
 }
 
 function formatDate(dateStr: string): string {
-  if (!dateStr) return '-';
+  if (!dateStr || dateStr === 'null') return '-';
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return dateStr;
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function displayValue(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === '' || value === 'null') return '-';
+  return String(value);
 }
 
 export default function ClaimLineDetails() {
@@ -37,8 +42,9 @@ export default function ClaimLineDetails() {
   const lineItems = getLineItemsForClaim(claimId || '');
   const claimInfo = claimsData.find(c => c.clmId === claimId);
 
-  const totalLineAmount = lineItems.reduce((sum, item) => sum + item.chrgAmt, 0);
-  const totalAllowAmount = lineItems.reduce((sum, item) => sum + item.allowAmt, 0);
+  const totalChrgAmt = lineItems.reduce((sum, item) => sum + item.chrgAmt, 0);
+  const totalPaidAmt = lineItems.reduce((sum, item) => sum + item.paidAmt, 0);
+  const totalCvrdAmt = lineItems.reduce((sum, item) => sum + item.cvrdAmt, 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,7 +74,7 @@ export default function ClaimLineDetails() {
       </header>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4">
         <Card className="bg-kpi text-kpi-foreground shadow-lg">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
@@ -88,7 +94,7 @@ export default function ClaimLineDetails() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium opacity-90">Total Charged Amount</p>
-                <p className="text-3xl font-bold mt-1">{formatCurrency(totalLineAmount)}</p>
+                <p className="text-3xl font-bold mt-1">{formatCurrency(totalChrgAmt)}</p>
               </div>
               <div className="p-3 bg-white/10 rounded-lg">
                 <DollarSign className="h-6 w-6" />
@@ -101,8 +107,22 @@ export default function ClaimLineDetails() {
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium opacity-90">Total Allowed Amount</p>
-                <p className="text-3xl font-bold mt-1">{formatCurrency(totalAllowAmount)}</p>
+                <p className="text-sm font-medium opacity-90">Total Paid Amount</p>
+                <p className="text-3xl font-bold mt-1">{formatCurrency(totalPaidAmt)}</p>
+              </div>
+              <div className="p-3 bg-white/10 rounded-lg">
+                <DollarSign className="h-6 w-6" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-kpi text-kpi-foreground shadow-lg">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium opacity-90">Total Covered Amount</p>
+                <p className="text-3xl font-bold mt-1">{formatCurrency(totalCvrdAmt)}</p>
               </div>
               <div className="p-3 bg-white/10 rounded-lg">
                 <FileText className="h-6 w-6" />
@@ -129,39 +149,57 @@ export default function ClaimLineDetails() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/20">
-                      <TableHead>Line #</TableHead>
-                      <TableHead>Seq #</TableHead>
-                      <TableHead>Service Date</TableHead>
+                      <TableHead>Claim Line #</TableHead>
+                      <TableHead>EDI Line #</TableHead>
+                      <TableHead>Begin Date</TableHead>
                       <TableHead>End Date</TableHead>
                       <TableHead>Procedure Code</TableHead>
+                      <TableHead>Diagnosis Code</TableHead>
                       <TableHead>Revenue Code</TableHead>
-                      <TableHead>Diagnosis</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Quantity</TableHead>
+                      <TableHead>Service ID</TableHead>
+                      <TableHead>RNC Code</TableHead>
+                      <TableHead>NDC</TableHead>
+                      <TableHead>POS Code</TableHead>
+                      <TableHead>Pre Auth</TableHead>
+                      <TableHead>RM Type</TableHead>
+                      <TableHead>Drug Units</TableHead>
+                      <TableHead>Drug UOM</TableHead>
+                      <TableHead>Count</TableHead>
+                      <TableHead>UOM</TableHead>
                       <TableHead className="text-right">Charged Amt</TableHead>
-                      <TableHead className="text-right">Allowed Amt</TableHead>
-                      <TableHead className="text-right">Copay</TableHead>
+                      <TableHead className="text-right">Covered Amt</TableHead>
+                      <TableHead className="text-right">Paid Amt</TableHead>
                       <TableHead className="text-right">Coinsurance</TableHead>
+                      <TableHead className="text-right">Deductible</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {lineItems.map((item, index) => (
-                      <TableRow key={`${item.clmId}-${item.lineNum}-${index}`} className="hover:bg-muted/50">
+                      <TableRow key={`${item.clmId}-${item.clmLnNum}-${index}`} className="hover:bg-muted/50">
                         <TableCell>
-                          <Badge variant="outline">{item.lineNum}</Badge>
+                          <Badge variant="outline">{item.clmLnNum}</Badge>
                         </TableCell>
-                        <TableCell>{item.seqNum}</TableCell>
-                        <TableCell>{formatDate(item.beginDt)}</TableCell>
-                        <TableCell>{formatDate(item.endDt)}</TableCell>
-                        <TableCell className="font-mono text-sm">{item.procCd || '-'}</TableCell>
-                        <TableCell className="font-mono text-sm">{item.revCd || '-'}</TableCell>
-                        <TableCell className="font-mono text-sm">{item.diagCd || '-'}</TableCell>
-                        <TableCell>{item.catCd || '-'}</TableCell>
-                        <TableCell>{item.qty}</TableCell>
+                        <TableCell>{item.ediLnNum}</TableCell>
+                        <TableCell>{formatDate(item.lnBeginDt)}</TableCell>
+                        <TableCell>{formatDate(item.lnEndDt)}</TableCell>
+                        <TableCell className="font-mono text-sm">{displayValue(item.procCd)}</TableCell>
+                        <TableCell className="font-mono text-sm">{displayValue(item.diagCd)}</TableCell>
+                        <TableCell className="font-mono text-sm">{displayValue(item.revnuCd)}</TableCell>
+                        <TableCell className="font-mono text-sm">{displayValue(item.serviceId)}</TableCell>
+                        <TableCell className="font-mono text-sm">{displayValue(item.rncCd)}</TableCell>
+                        <TableCell className="font-mono text-sm">{displayValue(item.ndc)}</TableCell>
+                        <TableCell>{displayValue(item.posCd)}</TableCell>
+                        <TableCell>{displayValue(item.preAuthInd)}</TableCell>
+                        <TableCell>{displayValue(item.rmTyp)}</TableCell>
+                        <TableCell>{displayValue(item.drugUnits)}</TableCell>
+                        <TableCell>{displayValue(item.drugUom)}</TableCell>
+                        <TableCell>{item.count}</TableCell>
+                        <TableCell>{displayValue(item.uom)}</TableCell>
                         <TableCell className="text-right font-medium">{formatCurrency(item.chrgAmt)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.allowAmt)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.copayAmt)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(item.cvrdAmt)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(item.paidAmt)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(item.coinsAmt)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(item.dedAmt)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
