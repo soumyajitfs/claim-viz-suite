@@ -16,7 +16,23 @@ function formatCurrency(amount: number): string {
 
 function displayDate(dateStr: string): string {
   if (!dateStr || dateStr === 'null') return '-';
-  return dateStr;
+  
+  // Try parsing as ISO string first
+  let date = new Date(dateStr);
+  
+  // If that fails, check if it's an Excel serial number (numeric string)
+  if (isNaN(date.getTime())) {
+    const numValue = parseFloat(dateStr);
+    if (!isNaN(numValue) && numValue > 0 && numValue < 100000) {
+      // Excel serial number: days since January 1, 1900
+      // Excel incorrectly treats 1900 as a leap year, so we subtract 1
+      const excelEpoch = new Date(1899, 11, 30); // December 30, 1899
+      date = new Date(excelEpoch.getTime() + (numValue - 1) * 86400000);
+    }
+  }
+  
+  if (isNaN(date.getTime())) return dateStr;
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 function displayValue(value: string | number | null | undefined): string {

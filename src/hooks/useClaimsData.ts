@@ -19,7 +19,41 @@ export function useClaimsData() {
       try {
         const response = await fetch('/data/claims-data.xlsx');
         const arrayBuffer = await response.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true, cellNF: false, cellText: false });
+
+        // Helper function to convert Excel serial number or date to ISO string
+        const convertExcelDate = (value: unknown): string => {
+          if (!value) return '';
+          // If it's already a Date object (from cellDates: true)
+          if (value instanceof Date) {
+            return value.toISOString();
+          }
+          // If it's a number (Excel serial number)
+          if (typeof value === 'number') {
+            // Excel serial number: days since January 1, 1900
+            // Excel incorrectly treats 1900 as a leap year, so we subtract 1
+            const excelEpoch = new Date(1899, 11, 30); // December 30, 1899
+            const date = new Date(excelEpoch.getTime() + (value - 1) * 86400000);
+            return date.toISOString();
+          }
+          // If it's a string, try to parse it
+          if (typeof value === 'string') {
+            // Check if it's a numeric string (Excel serial number)
+            const numValue = parseFloat(value);
+            if (!isNaN(numValue) && numValue > 0 && numValue < 100000) {
+              // Likely an Excel serial number
+              const excelEpoch = new Date(1899, 11, 30);
+              const date = new Date(excelEpoch.getTime() + (numValue - 1) * 86400000);
+              return date.toISOString();
+            }
+            // Try parsing as regular date string
+            const date = new Date(value);
+            if (!isNaN(date.getTime())) {
+              return date.toISOString();
+            }
+          }
+          return String(value);
+        };
 
         // Parse Claim Data (Sheet 1)
         const claimSheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -36,12 +70,12 @@ export function useClaimsData() {
             score: score,
             acctNum: String(row['acctNum'] || ''),
             billTyCd: String(row['billTyCd'] || ''),
-            clmBeginDt: String(row['clmBeginDt'] || ''),
-            clmEndDt: String(row['clmEndDt'] || ''),
+            clmBeginDt: convertExcelDate(row['clmBeginDt']),
+            clmEndDt: convertExcelDate(row['clmEndDt']),
             clmTyCd: String(row['clmTyCd'] || ''),
             formTyCd: String(row['formTyCd'] || ''),
             paperEdiCd: String(row['paperEdiCd'] || ''),
-            rcvdTs: String(row['rcvdTs'] || ''),
+            rcvdTs: convertExcelDate(row['rcvdTs']),
             billProv_city: String(row['billProv_city(pie chart)'] || row['billProv_city'] || ''),
             billProv_dervCpfTyCd2: String(row['billProv_dervCpfTyCd2'] || ''),
             billProv_stCd: String(row['billProv_stCd'] || ''),
@@ -59,6 +93,32 @@ export function useClaimsData() {
         const lineSheet = workbook.Sheets[workbook.SheetNames[1]];
         const lineRaw = XLSX.utils.sheet_to_json<Record<string, unknown>>(lineSheet);
         
+        // Helper function for line data dates
+        const convertExcelDateForLine = (value: unknown): string => {
+          if (!value) return '';
+          if (value instanceof Date) {
+            return value.toISOString();
+          }
+          if (typeof value === 'number') {
+            const excelEpoch = new Date(1899, 11, 30);
+            const date = new Date(excelEpoch.getTime() + (value - 1) * 86400000);
+            return date.toISOString();
+          }
+          if (typeof value === 'string') {
+            const numValue = parseFloat(value);
+            if (!isNaN(numValue) && numValue > 0 && numValue < 100000) {
+              const excelEpoch = new Date(1899, 11, 30);
+              const date = new Date(excelEpoch.getTime() + (numValue - 1) * 86400000);
+              return date.toISOString();
+            }
+            const date = new Date(value);
+            if (!isNaN(date.getTime())) {
+              return date.toISOString();
+            }
+          }
+          return String(value);
+        };
+
         const lines: LineData[] = lineRaw.map((row) => ({
           clmId: String(row['clmId'] || ''),
           chrgAmt: parseFloat(String(row['chrgAmt'] || 0)),
@@ -67,8 +127,8 @@ export function useClaimsData() {
           coinsAmt: parseFloat(String(row['coinsAmt'] || 0)),
           cvrdAmt: parseFloat(String(row['cvrdAmt'] || 0)),
           dedAmt: parseFloat(String(row['dedAmt'] || 0)),
-          lnBeginDt: String(row['lnBeginDt'] || ''),
-          lnEndDt: String(row['lnEndDt'] || ''),
+          lnBeginDt: convertExcelDateForLine(row['lnBeginDt']),
+          lnEndDt: convertExcelDateForLine(row['lnEndDt']),
           ndc: String(row['ndc'] || ''),
           paidAmt: parseFloat(String(row['paidAmt'] || 0)),
           posCd: String(row['posCd'] || ''),
