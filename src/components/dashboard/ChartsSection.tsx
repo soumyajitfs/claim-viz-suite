@@ -77,15 +77,27 @@ export function ChartsSection() {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 px-4 pb-2">
       {/* Provider City Chart - Blue shades only */}
       <Card className="shadow-sm">
-        <CardHeader className="pb-1 pt-3">
-          <CardTitle className="text-sm font-semibold">Claims by Provider City</CardTitle>
+        <CardHeader className="pb-0 pt-1 px-2">
+          <CardTitle className="text-sm font-bold">Claims by Provider City</CardTitle>
         </CardHeader>
-        <CardContent className="p-2">
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={cityData} margin={{ top: 5, right: 5, bottom: 50, left: 40 }}>
+        <CardContent className="px-0.5 py-0">
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={cityData} margin={{ top: 3, right: 3, bottom: 55, left: 30 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-45} textAnchor="end" height={60} label={{ value: 'Provider City', position: 'insideBottom', offset: -5, style: { textAnchor: 'middle', fontSize: '10px' } }} />
-              <YAxis tick={{ fontSize: 9 }} label={{ value: 'Number of Claims', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '10px' } }} />
+              <XAxis 
+                dataKey="name" 
+                tick={{ fontSize: 10, fontWeight: 'bold' }} 
+                angle={-90} 
+                textAnchor="end" 
+                height={55}
+                interval={0}
+                label={{ value: 'Provider City', position: 'insideBottom', offset: -15, style: { textAnchor: 'middle', fontSize: '11px', fontWeight: 'bold' } }} 
+              />
+              <YAxis 
+                tick={{ fontSize: 10, fontWeight: 'bold' }} 
+                width={28}
+                label={{ value: 'Number of Claims', angle: -90, position: 'insideLeft', offset: -2, style: { textAnchor: 'middle', fontSize: '11px', fontWeight: 'bold' } }} 
+              />
               <Tooltip formatter={(value: number) => [value, 'Claims']} />
               <Bar dataKey="value" fill={PRIMARY_BLUE} radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -93,19 +105,31 @@ export function ChartsSection() {
         </CardContent>
       </Card>
 
-      {/* Provider Speciality Chart */}
+      {/* Provider Speciality Chart - Changed to vertical bar chart */}
       <Card className="shadow-sm">
-        <CardHeader className="pb-1 pt-3">
-          <CardTitle className="text-sm font-semibold">Claims by Provider Speciality</CardTitle>
+        <CardHeader className="pb-0 pt-1 px-2">
+          <CardTitle className="text-sm font-bold">Claims by Provider Speciality</CardTitle>
         </CardHeader>
-        <CardContent className="p-2">
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={providerSpecialityData} layout="vertical" margin={{ top: 5, right: 5, bottom: 50, left: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-              <XAxis type="number" tick={{ fontSize: 9 }} label={{ value: 'Number of Claims', position: 'insideBottom', offset: -5, style: { textAnchor: 'middle', fontSize: '10px' } }} />
-              <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 9 }} label={{ value: 'Provider Speciality', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '10px' } }} />
+        <CardContent className="px-0.5 py-0">
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={providerSpecialityData} margin={{ top: 3, right: 3, bottom: 55, left: 30 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis 
+                dataKey="name" 
+                tick={{ fontSize: 10, fontWeight: 'bold' }} 
+                angle={-90} 
+                textAnchor="end" 
+                height={55}
+                interval={0}
+                label={{ value: 'Provider Speciality', position: 'insideBottom', offset: -5, style: { textAnchor: 'middle', fontSize: '11px', fontWeight: 'bold' } }} 
+              />
+              <YAxis 
+                tick={{ fontSize: 10, fontWeight: 'bold' }} 
+                width={28}
+                label={{ value: 'Number of Claims', angle: -90, position: 'insideLeft', offset: -2, style: { textAnchor: 'middle', fontSize: '11px', fontWeight: 'bold' } }} 
+              />
               <Tooltip formatter={(value: number) => [value, 'Claims']} />
-              <Bar dataKey="value" fill={PRIMARY_BLUE} radius={[0, 4, 4, 0]} />
+              <Bar dataKey="value" fill={PRIMARY_BLUE} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -113,15 +137,27 @@ export function ChartsSection() {
 
       {/* Amount Range Distribution */}
       <Card className="shadow-sm">
-        <CardHeader className="pb-1 pt-3">
-          <CardTitle className="text-sm font-semibold">Claim Amount Distribution</CardTitle>
+        <CardHeader className="pb-0 pt-1 px-2">
+          <CardTitle className="text-sm font-bold">Claim Amount Distribution</CardTitle>
         </CardHeader>
-        <CardContent className="p-2">
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={amountRangeData} margin={{ top: 5, right: 5, bottom: 50, left: 40 }}>
+        <CardContent className="px-0.5 py-0">
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={amountRangeData} margin={{ top: 3, right: 3, bottom: 75, left: 30 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="range" tick={{ fontSize: 8 }} angle={-45} textAnchor="end" height={60} label={{ value: 'Claim Amount Range ($)', position: 'insideBottom', offset: -5, style: { textAnchor: 'middle', fontSize: '10px' } }} />
-              <YAxis tick={{ fontSize: 9 }} label={{ value: 'Number of Claims', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '10px' } }} />
+              <XAxis 
+                dataKey="range" 
+                tick={{ fontSize: 10, fontWeight: 'bold' }} 
+                angle={-90} 
+                textAnchor="end" 
+                height={75}
+                interval={0}
+                label={{ value: 'Claim Amount Range ($)', position: 'insideBottom', offset: -60, style: { textAnchor: 'middle', fontSize: '11px', fontWeight: 'bold' } }} 
+              />
+              <YAxis 
+                tick={{ fontSize: 10, fontWeight: 'bold' }} 
+                width={28}
+                label={{ value: 'Number of Claims', angle: -90, position: 'insideLeft', offset: -2, style: { textAnchor: 'middle', fontSize: '11px', fontWeight: 'bold' } }} 
+              />
               <Tooltip formatter={(value: number) => [value, 'Claims']} />
               <Bar dataKey="count" fill={PRIMARY_BLUE} radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -131,15 +167,23 @@ export function ChartsSection() {
 
       {/* Risk Distribution - Bar Chart instead of donut */}
       <Card className="shadow-sm">
-        <CardHeader className="pb-1 pt-3">
-          <CardTitle className="text-sm font-semibold">Risk Distribution</CardTitle>
+        <CardHeader className="pb-0 pt-1 px-2">
+          <CardTitle className="text-sm font-bold">Adjustment Risk distribution</CardTitle>
         </CardHeader>
-        <CardContent className="p-2">
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={riskData} margin={{ top: 5, right: 5, bottom: 50, left: 40 }}>
+        <CardContent className="px-0.5 py-0">
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={riskData} margin={{ top: 3, right: 3, bottom: 35, left: 30 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 9 }} label={{ value: 'Risk Level', position: 'insideBottom', offset: -5, style: { textAnchor: 'middle', fontSize: '10px' } }} />
-              <YAxis tick={{ fontSize: 9 }} label={{ value: 'Number of Claims', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '10px' } }} />
+              <XAxis 
+                dataKey="name" 
+                tick={{ fontSize: 10, fontWeight: 'bold' }} 
+                label={{ value: 'Risk Level', position: 'insideBottom', offset: -2, style: { textAnchor: 'middle', fontSize: '11px', fontWeight: 'bold' } }} 
+              />
+              <YAxis 
+                tick={{ fontSize: 10, fontWeight: 'bold' }} 
+                width={28}
+                label={{ value: 'Number of Claims', angle: -90, position: 'insideLeft', offset: -2, style: { textAnchor: 'middle', fontSize: '11px', fontWeight: 'bold' } }} 
+              />
               <Tooltip formatter={(value: number) => [value, 'Claims']} />
               <Bar dataKey="value" fill={PRIMARY_BLUE} radius={[4, 4, 0, 0]} />
             </BarChart>

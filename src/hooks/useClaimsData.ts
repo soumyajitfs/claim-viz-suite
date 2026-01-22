@@ -239,8 +239,83 @@ export function useClaimsData() {
           uom: String(row['uom'] || ''),
         }));
 
+        // Validate line data for issues
+        const lineDataIssues: string[] = [];
+        
+        // Group lines by claim ID
+        const linesByClaim = new Map<string, LineData[]>();
+        lines.forEach(line => {
+          if (!linesByClaim.has(line.clmId)) {
+            linesByClaim.set(line.clmId, []);
+          }
+          linesByClaim.get(line.clmId)!.push(line);
+        });
+
+        // Check for duplicate line numbers within same claim
+        linesByClaim.forEach((claimLines, claimId) => {
+          const lineNumbers = new Set<number>();
+          const duplicateLineNums: number[] = [];
+          
+          claimLines.forEach(line => {
+            if (lineNumbers.has(line.clmLnNum)) {
+              duplicateLineNums.push(line.clmLnNum);
+            } else {
+              lineNumbers.add(line.clmLnNum);
+            }
+          });
+          
+          if (duplicateLineNums.length > 0) {
+            lineDataIssues.push(`Claim ${claimId}: Duplicate line numbers found: ${duplicateLineNums.join(', ')}`);
+          }
+        });
+
+        // Check for missing line data for claims
+        const claimIds = new Set(claims.map(c => c.clmId));
+        const claimsWithLines = new Set(lines.map(l => l.clmId));
+        const missingLineData: string[] = [];
+        
+        claimIds.forEach(claimId => {
+          if (!claimsWithLines.has(claimId)) {
+            missingLineData.push(claimId);
+          }
+        });
+        
+        if (missingLineData.length > 0) {
+          lineDataIssues.push(`Claims missing line data: ${missingLineData.join(', ')}`);
+        }
+
+        // Check if line amounts sum to claim amounts
+        claims.forEach(claim => {
+          const claimLines = linesByClaim.get(claim.clmId) || [];
+          if (claimLines.length > 0) {
+            const totalLineChrgAmt = claimLines.reduce((sum, line) => sum + line.chrgAmt, 0);
+            const claimChrgAmt = claim.clmAmt_totChrgAmt;
+            const difference = Math.abs(totalLineChrgAmt - claimChrgAmt);
+            
+            // Allow small floating point differences (0.01)
+            if (difference > 0.01) {
+              lineDataIssues.push(`Claim ${claim.clmId}: Line total (${totalLineChrgAmt.toFixed(2)}) does not match claim amount (${claimChrgAmt.toFixed(2)}), difference: ${difference.toFixed(2)}`);
+            }
+          }
+        });
+
+        // Log line item counts per claim
+        const lineCounts = Array.from(linesByClaim.entries()).map(([claimId, claimLines]) => ({
+          claimId,
+          lineCount: claimLines.length
+        }));
+        console.log('Line item counts per claim:', lineCounts);
+
+        if (lineDataIssues.length > 0) {
+          console.warn('Line Data Validation Issues Found:');
+          lineDataIssues.forEach(issue => console.warn(`  - ${issue}`));
+        } else {
+          console.log('✓ Line data validation passed: No issues found');
+        }
+
         setLineData(lines);
         console.log(`Loaded ${lines.length} line items from Excel file`);
+        console.log(`Total claims: ${claims.length}, Claims with line data: ${linesByClaim.size}`);
         setLoading(false);
       } catch (err) {
         setError('Failed to load claims data');

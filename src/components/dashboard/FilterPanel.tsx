@@ -55,11 +55,11 @@ export function FilterPanel() {
           value={filters.aaInd[0] || 'all'}
           onValueChange={(value) => handleFilterChange('aaInd', value)}
         >
-          <SelectTrigger className="w-[130px] h-9 text-sm">
+          <SelectTrigger className="w-[150px] h-9 text-sm">
             <SelectValue placeholder="AA Indicator" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All AA Ind</SelectItem>
+            <SelectItem value="all">Adjudication</SelectItem>
             {filterOptions.aaInd.map(option => (
               <SelectItem key={option} value={option}>{option}</SelectItem>
             ))}
@@ -70,11 +70,11 @@ export function FilterPanel() {
           value={filters.clmTyCd[0] || 'all'}
           onValueChange={(value) => handleFilterChange('clmTyCd', value)}
         >
-          <SelectTrigger className="w-[130px] h-9 text-sm">
+          <SelectTrigger className="w-[200px] h-9 text-sm">
             <SelectValue placeholder="Claim Type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="all">Provider Network code</SelectItem>
             {filterOptions.clmTyCd.map(option => (
               <SelectItem key={option} value={option}>{option}</SelectItem>
             ))}
@@ -85,11 +85,11 @@ export function FilterPanel() {
           value={filters.formTyCd[0] || 'all'}
           onValueChange={(value) => handleFilterChange('formTyCd', value)}
         >
-          <SelectTrigger className="w-[130px] h-9 text-sm">
+          <SelectTrigger className="w-[150px] h-9 text-sm">
             <SelectValue placeholder="Form Type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Forms</SelectItem>
+            <SelectItem value="all">Form Type</SelectItem>
             {filterOptions.formTyCd.map(option => (
               <SelectItem key={option} value={option}>{option}</SelectItem>
             ))}
@@ -100,11 +100,11 @@ export function FilterPanel() {
           value={filters.priority[0] || 'all'}
           onValueChange={(value) => handleFilterChange('priority', value)}
         >
-          <SelectTrigger className="w-[130px] h-9 text-sm">
+          <SelectTrigger className="w-[220px] h-9 text-sm">
             <SelectValue placeholder="Risk Level" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Risk</SelectItem>
+            <SelectItem value="all">Model classification</SelectItem>
             <SelectItem value="High">High</SelectItem>
             <SelectItem value="Medium">Medium</SelectItem>
             <SelectItem value="Low">Low</SelectItem>
@@ -115,11 +115,11 @@ export function FilterPanel() {
           value={filters.auditFlag[0] || 'all'}
           onValueChange={(value) => handleFilterChange('auditFlag', value)}
         >
-          <SelectTrigger className="w-[130px] h-9 text-sm">
+          <SelectTrigger className="w-[150px] h-9 text-sm">
             <SelectValue placeholder="Audit Flag" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="all">Audit flag</SelectItem>
             <SelectItem value="Y">Y</SelectItem>
           </SelectContent>
         </Select>

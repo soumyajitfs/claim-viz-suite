@@ -156,13 +156,14 @@ export function ClaimsTable() {
                     className="h-8 -ml-3 gap-1 font-semibold text-muted-foreground hover:text-foreground"
                     onClick={handleRiskFilter}
                   >
-                    Risk {riskFilter !== 'all' && `(${riskFilter})`}
+                    Model classification {riskFilter !== 'all' && `(${riskFilter})`}
                     <ArrowUpDown className="h-3 w-3" />
                   </Button>
                 </TableHead>
                 <TableHead className="w-[80px]">
                   <SortableHeader field="score">Score</SortableHeader>
                 </TableHead>
+                <TableHead className="w-[100px]">Audit Flag</TableHead>
                 <TableHead className="w-[130px]">
                   <SortableHeader field="rcvdTs">Received Date</SortableHeader>
                 </TableHead>
@@ -196,7 +197,6 @@ export function ClaimsTable() {
                 <TableHead className="w-[100px]">Benopt</TableHead>
                 <TableHead className="w-[120px]">Provider Par Ind</TableHead>
                 <TableHead className="w-[100px]">Provider Nt Cd</TableHead>
-                <TableHead className="w-[100px]">Audit Flag</TableHead>
                 <TableHead className="w-[150px]">Appeal Reason</TableHead>
                 <TableHead className="w-[100px]">Appeal ID</TableHead>
               </TableRow>
@@ -218,6 +218,13 @@ export function ClaimsTable() {
                     <RiskBadge risk={claim.priority} />
                   </TableCell>
                   <TableCell className="font-mono">{claim.score.toFixed(2)}</TableCell>
+                  <TableCell className="text-sm">
+                    {claim.auditFlag && claim.auditFlag.trim() !== '' ? (
+                      <Badge variant={claim.auditFlag.trim().toUpperCase() === 'Y' ? 'default' : 'outline'}>
+                        {claim.auditFlag.trim()}
+                      </Badge>
+                    ) : '-'}
+                  </TableCell>
                   <TableCell>{formatDate(claim.rcvdTs)}</TableCell>
                   <TableCell className="font-medium">{formatCurrency(claim.clmAmt_totChrgAmt)}</TableCell>
                   <TableCell className="font-medium">{formatCurrency(claim.clmAmt_totAllowAmt)}</TableCell>
@@ -241,13 +248,6 @@ export function ClaimsTable() {
                   <TableCell className="text-sm">{claim.benopt || '-'}</TableCell>
                   <TableCell className="text-sm">{claim.billProv_dervParInd || '-'}</TableCell>
                   <TableCell className="text-sm">{claim.billProv_ntCd || '-'}</TableCell>
-                  <TableCell className="text-sm">
-                    {claim.auditFlag && claim.auditFlag.trim() !== '' ? (
-                      <Badge variant={claim.auditFlag.trim().toUpperCase() === 'Y' ? 'default' : 'outline'}>
-                        {claim.auditFlag.trim()}
-                      </Badge>
-                    ) : '-'}
-                  </TableCell>
                   <TableCell className="text-sm truncate max-w-[150px]" title={claim.appealReason}>
                     {claim.appealReason && claim.appealReason.trim() !== '' ? claim.appealReason : '-'}
                   </TableCell>
