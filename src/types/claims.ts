@@ -16,9 +16,16 @@ export interface ClaimData {
   billProv_stCd: string;
   billProv_nm: string;
   clmAmt_totChrgAmt: number;
+  clmAmt_totAllowAmt: number;
   clmAmtRange: string;
   patDemo_patAge: number;
   patDemo_patGndr: string;
+  benopt: string;
+  billProv_dervParInd: string;
+  billProv_ntCd: string;
+  auditFlag: string;
+  appealReason: string;
+  appealId: string;
 }
 
 export interface LineData {
@@ -51,6 +58,8 @@ export interface FilterState {
   aaInd: string[];
   clmTyCd: string[];
   formTyCd: string[];
+  priority: string[];
+  auditFlag: string[];
   searchClaimId: string;
 }
 

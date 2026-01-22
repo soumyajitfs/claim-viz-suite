@@ -1,24 +1,9 @@
 import { useMemo } from 'react';
 import { useClaims } from '@/contexts/ClaimsContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
-const CHART_COLORS = [
-  'hsl(192, 70%, 40%)',
-  'hsl(38, 92%, 50%)',
-  'hsl(142, 71%, 45%)',
-  'hsl(280, 65%, 60%)',
-  'hsl(0, 72%, 51%)',
-  'hsl(200, 70%, 50%)',
-  'hsl(160, 60%, 45%)',
-  'hsl(320, 70%, 55%)',
-];
-
-const RISK_COLORS = {
-  High: 'hsl(0, 72%, 51%)',
-  Medium: 'hsl(38, 92%, 50%)',
-  Low: 'hsl(142, 71%, 45%)',
-};
+const PRIMARY_BLUE = 'hsl(192, 70%, 40%)';
 
 export function ChartsSection() {
   const { claimsData, loading } = useClaims();
@@ -35,15 +20,16 @@ export function ChartsSection() {
       .slice(0, 8);
   }, [claimsData]);
 
-  const providerTypeData = useMemo(() => {
+  const providerSpecialityData = useMemo(() => {
     const counts: Record<string, number> = {};
     claimsData.forEach(claim => {
-      const type = claim.billProv_dervCpfTyCd2 || 'Unknown';
-      counts[type] = (counts[type] || 0) + 1;
+      const speciality = claim.billProv_dervCpfTyCd2 || 'Unknown';
+      counts[speciality] = (counts[speciality] || 0) + 1;
     });
     return Object.entries(counts)
       .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10); // Top 10
   }, [claimsData]);
 
   const amountRangeData = useMemo(() => {
@@ -79,58 +65,47 @@ export function ChartsSection() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 px-4 pb-2">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-72 bg-muted animate-pulse rounded-xl" />
+          <div key={i} className="h-56 bg-muted animate-pulse rounded-lg" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-      {/* Provider City Pie Chart */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 px-4 pb-2">
+      {/* Provider City Chart - Blue shades only */}
       <Card className="shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold">Claims by Billing Provider City</CardTitle>
+        <CardHeader className="pb-1 pt-3">
+          <CardTitle className="text-sm font-semibold">Claims by Provider City</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2">
           <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie
-                data={cityData}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={80}
-                paddingAngle={2}
-                dataKey="value"
-                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                labelLine={false}
-              >
-                {cityData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                ))}
-              </Pie>
+            <BarChart data={cityData} margin={{ top: 5, right: 5, bottom: 50, left: 40 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-45} textAnchor="end" height={60} label={{ value: 'Provider City', position: 'insideBottom', offset: -5, style: { textAnchor: 'middle', fontSize: '10px' } }} />
+              <YAxis tick={{ fontSize: 9 }} label={{ value: 'Number of Claims', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '10px' } }} />
               <Tooltip formatter={(value: number) => [value, 'Claims']} />
-            </PieChart>
+              <Bar dataKey="value" fill={PRIMARY_BLUE} radius={[4, 4, 0, 0]} />
+            </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* Provider Type Chart */}
+      {/* Provider Speciality Chart */}
       <Card className="shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold">Claims by Provider Type</CardTitle>
+        <CardHeader className="pb-1 pt-3">
+          <CardTitle className="text-sm font-semibold">Claims by Provider Speciality</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2">
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={providerTypeData} layout="vertical">
+            <BarChart data={providerSpecialityData} layout="vertical" margin={{ top: 5, right: 5, bottom: 50, left: 60 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-              <XAxis type="number" />
-              <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 12 }} />
+              <XAxis type="number" tick={{ fontSize: 9 }} label={{ value: 'Number of Claims', position: 'insideBottom', offset: -5, style: { textAnchor: 'middle', fontSize: '10px' } }} />
+              <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 9 }} label={{ value: 'Provider Speciality', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '10px' } }} />
               <Tooltip formatter={(value: number) => [value, 'Claims']} />
-              <Bar dataKey="value" fill="hsl(192, 70%, 40%)" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="value" fill={PRIMARY_BLUE} radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -138,47 +113,36 @@ export function ChartsSection() {
 
       {/* Amount Range Distribution */}
       <Card className="shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold">Claim Amount Distribution</CardTitle>
+        <CardHeader className="pb-1 pt-3">
+          <CardTitle className="text-sm font-semibold">Claim Amount Distribution</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2">
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={amountRangeData}>
+            <BarChart data={amountRangeData} margin={{ top: 5, right: 5, bottom: 50, left: 40 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="range" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={60} />
-              <YAxis />
+              <XAxis dataKey="range" tick={{ fontSize: 8 }} angle={-45} textAnchor="end" height={60} label={{ value: 'Claim Amount Range ($)', position: 'insideBottom', offset: -5, style: { textAnchor: 'middle', fontSize: '10px' } }} />
+              <YAxis tick={{ fontSize: 9 }} label={{ value: 'Number of Claims', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '10px' } }} />
               <Tooltip formatter={(value: number) => [value, 'Claims']} />
-              <Bar dataKey="count" fill="hsl(200, 70%, 50%)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" fill={PRIMARY_BLUE} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* Risk Distribution Pie Chart */}
+      {/* Risk Distribution - Bar Chart instead of donut */}
       <Card className="shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold">Risk Distribution</CardTitle>
+        <CardHeader className="pb-1 pt-3">
+          <CardTitle className="text-sm font-semibold">Risk Distribution</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2">
           <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie
-                data={riskData}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={80}
-                paddingAngle={3}
-                dataKey="value"
-                label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
-              >
-                {riskData.map((entry) => (
-                  <Cell key={`cell-${entry.name}`} fill={RISK_COLORS[entry.name as keyof typeof RISK_COLORS]} />
-                ))}
-              </Pie>
+            <BarChart data={riskData} margin={{ top: 5, right: 5, bottom: 50, left: 40 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 9 }} label={{ value: 'Risk Level', position: 'insideBottom', offset: -5, style: { textAnchor: 'middle', fontSize: '10px' } }} />
+              <YAxis tick={{ fontSize: 9 }} label={{ value: 'Number of Claims', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '10px' } }} />
               <Tooltip formatter={(value: number) => [value, 'Claims']} />
-              <Legend />
-            </PieChart>
+              <Bar dataKey="value" fill={PRIMARY_BLUE} radius={[4, 4, 0, 0]} />
+            </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>

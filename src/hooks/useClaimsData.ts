@@ -11,13 +11,15 @@ export function useClaimsData() {
     aaInd: [],
     clmTyCd: [],
     formTyCd: [],
+    priority: [],
+    auditFlag: [],
     searchClaimId: '',
   });
 
   useEffect(() => {
     async function loadData() {
       try {
-        const response = await fetch('/data/claims-data.xlsx');
+        const response = await fetch('/data/Masked Sample Data - claim & line.xlsx');
         const arrayBuffer = await response.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true, cellNF: false, cellText: false });
 
@@ -59,9 +61,93 @@ export function useClaimsData() {
         const claimSheet = workbook.Sheets[workbook.SheetNames[0]];
         const claimRaw = XLSX.utils.sheet_to_json<Record<string, unknown>>(claimSheet);
         
+        // Debug: Log available column names to help identify the exact column names
+        if (claimRaw.length > 0) {
+          const allKeys = Object.keys(claimRaw[0]);
+          console.log('Available columns in Excel:', allKeys);
+          // Find columns that might be Audit Flag or Appeal ID
+          const auditFlagKeys = allKeys.filter(k => k.toLowerCase().includes('audit') || k.toLowerCase().includes('flag'));
+          const appealIdKeys = allKeys.filter(k => k.toLowerCase().includes('appeal') && k.toLowerCase().includes('id'));
+          const appealReasonKeys = allKeys.filter(k => k.toLowerCase().includes('appeal') && k.toLowerCase().includes('reason'));
+          console.log('Potential Audit Flag columns:', auditFlagKeys);
+          console.log('Potential Appeal ID columns:', appealIdKeys);
+          console.log('Potential Appeal Reason columns:', appealReasonKeys);
+          // Log first row to see actual values
+          if (claimRaw[0]) {
+            console.log('First row Audit Flag value:', claimRaw[0][auditFlagKeys[0]]);
+            console.log('First row Appeal ID value:', claimRaw[0][appealIdKeys[0]]);
+            console.log('First row Appeal Reason value:', claimRaw[0][appealReasonKeys[0]]);
+          }
+        }
+        
+        // Find actual column names from Excel
+        let actualAuditFlagColumn: string | null = null;
+        let actualAppealIdColumn: string | null = null;
+        let actualAppealReasonColumn: string | null = null;
+        
+        if (claimRaw.length > 0) {
+          const allKeys = Object.keys(claimRaw[0]);
+          // Find Audit Flag column
+          actualAuditFlagColumn = allKeys.find(k => 
+            k.toLowerCase().includes('audit') && k.toLowerCase().includes('flag')
+          ) || allKeys.find(k => k.toLowerCase() === 'audit flag') || null;
+          
+          // Find Appeal ID column
+          actualAppealIdColumn = allKeys.find(k => 
+            k.toLowerCase().includes('appeal') && k.toLowerCase().includes('id')
+          ) || allKeys.find(k => k.toLowerCase() === 'appeal id') || null;
+          
+          // Find Appeal Reason column
+          actualAppealReasonColumn = allKeys.find(k => 
+            k.toLowerCase().includes('appeal') && k.toLowerCase().includes('reason')
+          ) || allKeys.find(k => k.toLowerCase() === 'appeal reason') || null;
+          
+          console.log('Detected Audit Flag column:', actualAuditFlagColumn);
+          console.log('Detected Appeal ID column:', actualAppealIdColumn);
+          console.log('Detected Appeal Reason column:', actualAppealReasonColumn);
+        }
+
+        // Helper function to find column value with multiple name variations
+        const getColumnValue = (row: Record<string, unknown>, possibleNames: string[], actualColumn: string | null = null): string => {
+          // First try the detected actual column name
+          if (actualColumn && row[actualColumn] !== null && row[actualColumn] !== undefined) {
+            const value = String(row[actualColumn]).trim();
+            if (value !== '' && value !== 'null' && value !== 'undefined') {
+              return value;
+            }
+          }
+          
+          // Then try exact matches
+          for (const name of possibleNames) {
+            if (row.hasOwnProperty(name) && row[name] !== null && row[name] !== undefined) {
+              const value = String(row[name]).trim();
+              if (value !== '' && value !== 'null' && value !== 'undefined') {
+                return value;
+              }
+            }
+          }
+          
+          // Then try case-insensitive matches
+          const rowKeys = Object.keys(row);
+          for (const possibleName of possibleNames) {
+            const foundKey = rowKeys.find(key => 
+              key.toLowerCase().trim() === possibleName.toLowerCase().trim() ||
+              key.replace(/\s+/g, ' ').toLowerCase() === possibleName.replace(/\s+/g, ' ').toLowerCase()
+            );
+            if (foundKey && row[foundKey] !== null && row[foundKey] !== undefined) {
+              const value = String(row[foundKey]).trim();
+              if (value !== '' && value !== 'null' && value !== 'undefined') {
+                return value;
+              }
+            }
+          }
+          return '';
+        };
+
         const claims: ClaimData[] = claimRaw.map((row) => {
           const score = parseFloat(String(row['Score'] || row['score'] || 0));
           const amount = parseFloat(String(row['clmAmt_totChrgAmt'] || 0));
+          const allowAmount = parseFloat(String(row['clmAmt_totAllowAmt'] || 0));
           
           return {
             clmId: String(row['clmId'] || ''),
@@ -81,13 +167,21 @@ export function useClaimsData() {
             billProv_stCd: String(row['billProv_stCd'] || ''),
             billProv_nm: String(row['billProv_nm'] || ''),
             clmAmt_totChrgAmt: amount,
+            clmAmt_totAllowAmt: allowAmount,
             clmAmtRange: getAmountRange(amount),
             patDemo_patAge: parseInt(String(row['patDemo_patAge'] || 0)),
             patDemo_patGndr: String(row['patDemo_patGndr'] || ''),
+            benopt: String(row['benopt'] || ''),
+            billProv_dervParInd: String(row['billProv_dervParInd'] || ''),
+            billProv_ntCd: String(row['billProv_ntCd'] || ''),
+            auditFlag: getColumnValue(row, ['Audit Flag', 'auditFlag', 'AuditFlag', 'audit flag', 'AUDIT FLAG', 'Audit_Flag'], actualAuditFlagColumn),
+            appealReason: getColumnValue(row, ['Appeal Reason', 'appealReason', 'AppealReason', 'appeal reason', 'APPEAL REASON', 'Appeal_Reason'], actualAppealReasonColumn),
+            appealId: getColumnValue(row, ['Appeal ID', 'appealId', 'AppealId', 'appeal id', 'APPEAL ID', 'AppealID', 'Appeal_ID'], actualAppealIdColumn),
           };
         });
 
         setClaimsData(claims);
+        console.log(`Loaded ${claims.length} claims from Excel file`);
 
         // Parse Line Data (Sheet 2)
         const lineSheet = workbook.Sheets[workbook.SheetNames[1]];
@@ -146,11 +240,13 @@ export function useClaimsData() {
         }));
 
         setLineData(lines);
+        console.log(`Loaded ${lines.length} line items from Excel file`);
         setLoading(false);
       } catch (err) {
         setError('Failed to load claims data');
         setLoading(false);
-        console.error(err);
+        console.error('Error loading Excel data:', err);
+        console.error('Please check that the Excel file exists at: /data/Masked Sample Data - claim & line.xlsx');
       }
     }
 
@@ -170,6 +266,11 @@ export function useClaimsData() {
       if (filters.aaInd.length > 0 && !filters.aaInd.includes(claim.aaInd)) return false;
       if (filters.clmTyCd.length > 0 && !filters.clmTyCd.includes(claim.clmTyCd)) return false;
       if (filters.formTyCd.length > 0 && !filters.formTyCd.includes(claim.formTyCd)) return false;
+      if (filters.priority.length > 0 && !filters.priority.includes(claim.priority)) return false;
+      if (filters.auditFlag.length > 0) {
+        const claimAuditFlag = claim.auditFlag?.trim().toUpperCase() || '';
+        if (!filters.auditFlag.some(flag => claimAuditFlag === flag.trim().toUpperCase())) return false;
+      }
       if (filters.searchClaimId && !claim.clmId.toLowerCase().includes(filters.searchClaimId.toLowerCase())) return false;
       return true;
     });

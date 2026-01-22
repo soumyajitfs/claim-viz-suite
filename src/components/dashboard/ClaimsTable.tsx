@@ -40,6 +40,7 @@ function formatDate(dateStr: string): string {
 }
 
 function RiskBadge({ risk }: { risk: string }) {
+  // Use different colors for High, Medium, Low in table column only
   const variants: Record<string, { className: string }> = {
     High: { className: 'bg-risk-high text-white hover:bg-risk-high/90' },
     Medium: { className: 'bg-risk-medium text-white hover:bg-risk-medium/90' },
@@ -47,7 +48,7 @@ function RiskBadge({ risk }: { risk: string }) {
   };
 
   return (
-    <Badge className={cn('font-medium', variants[risk]?.className || '')}>
+    <Badge className={cn('font-medium', variants[risk]?.className || 'bg-risk-medium text-white')}>
       {risk}
     </Badge>
   );
@@ -62,6 +63,7 @@ export function ClaimsTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<SortField>('score');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [riskFilter, setRiskFilter] = useState<'all' | 'High' | 'Medium' | 'Low'>('all');
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -72,7 +74,26 @@ export function ClaimsTable() {
     }
   };
 
-  const sortedData = [...claimsData].sort((a, b) => {
+  const handleRiskFilter = () => {
+    // Cycle through: all -> High -> Medium -> Low -> all
+    if (riskFilter === 'all') {
+      setRiskFilter('High');
+    } else if (riskFilter === 'High') {
+      setRiskFilter('Medium');
+    } else if (riskFilter === 'Medium') {
+      setRiskFilter('Low');
+    } else {
+      setRiskFilter('all');
+    }
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  // Filter by risk level first, then sort
+  const filteredByRisk = riskFilter === 'all' 
+    ? claimsData 
+    : claimsData.filter(claim => claim.priority === riskFilter);
+
+  const sortedData = [...filteredByRisk].sort((a, b) => {
     const aVal = a[sortField];
     const bVal = b[sortField];
     
@@ -114,11 +135,11 @@ export function ClaimsTable() {
   );
 
   return (
-    <div className="p-4">
-      <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b bg-muted/30">
-          <h3 className="font-semibold text-foreground">Claims Inventory</h3>
-          <p className="text-sm text-muted-foreground">Click on a claim to view line item details</p>
+    <div className="px-4 pb-4">
+      <div className="bg-card rounded-lg border shadow-sm overflow-hidden">
+        <div className="px-4 py-2 border-b bg-muted/30">
+          <h3 className="text-sm font-semibold text-foreground">Claims Inventory</h3>
+          <p className="text-xs text-muted-foreground">Click on a claim to view line item details</p>
         </div>
         
         <div className="overflow-x-auto">
@@ -129,7 +150,15 @@ export function ClaimsTable() {
                   <SortableHeader field="clmId">Claim ID</SortableHeader>
                 </TableHead>
                 <TableHead className="w-[100px]">
-                  <SortableHeader field="priority">Risk</SortableHeader>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 -ml-3 gap-1 font-semibold text-muted-foreground hover:text-foreground"
+                    onClick={handleRiskFilter}
+                  >
+                    Risk {riskFilter !== 'all' && `(${riskFilter})`}
+                    <ArrowUpDown className="h-3 w-3" />
+                  </Button>
                 </TableHead>
                 <TableHead className="w-[80px]">
                   <SortableHeader field="score">Score</SortableHeader>
@@ -140,10 +169,36 @@ export function ClaimsTable() {
                 <TableHead className="w-[130px]">
                   <SortableHeader field="clmAmt_totChrgAmt">Claim Amount</SortableHeader>
                 </TableHead>
+                <TableHead className="w-[130px]">
+                  <SortableHeader field="clmAmt_totAllowAmt">Allow Amount</SortableHeader>
+                </TableHead>
                 <TableHead className="w-[100px]">Form Type</TableHead>
-                <TableHead className="w-[100px]">Input Method</TableHead>
-                <TableHead className="w-[100px]">State</TableHead>
+                <TableHead className="w-[100px]">
+                  <SortableHeader field="paperEdiCd">paperEdiCd</SortableHeader>
+                </TableHead>
+                <TableHead className="w-[100px]">
+                  <SortableHeader field="billTyCd">billTyCd</SortableHeader>
+                </TableHead>
+                <TableHead className="w-[100px]">
+                  <SortableHeader field="billProv_stCd">billProv_stCd</SortableHeader>
+                </TableHead>
+                <TableHead className="w-[120px]">Provider City</TableHead>
+                <TableHead className="w-[150px]">
+                  <SortableHeader field="billProv_dervCpfTyCd2">Provider Speciality</SortableHeader>
+                </TableHead>
+                <TableHead className="w-[80px]">
+                  <SortableHeader field="patDemo_patAge">Age</SortableHeader>
+                </TableHead>
+                <TableHead className="w-[100px]">
+                  <SortableHeader field="patDemo_patGndr">Gender</SortableHeader>
+                </TableHead>
                 <TableHead className="w-[180px]">Provider</TableHead>
+                <TableHead className="w-[100px]">Benopt</TableHead>
+                <TableHead className="w-[120px]">Provider Par Ind</TableHead>
+                <TableHead className="w-[100px]">Provider Nt Cd</TableHead>
+                <TableHead className="w-[100px]">Audit Flag</TableHead>
+                <TableHead className="w-[150px]">Appeal Reason</TableHead>
+                <TableHead className="w-[100px]">Appeal ID</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -165,13 +220,39 @@ export function ClaimsTable() {
                   <TableCell className="font-mono">{claim.score.toFixed(2)}</TableCell>
                   <TableCell>{formatDate(claim.rcvdTs)}</TableCell>
                   <TableCell className="font-medium">{formatCurrency(claim.clmAmt_totChrgAmt)}</TableCell>
+                  <TableCell className="font-medium">{formatCurrency(claim.clmAmt_totAllowAmt)}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{claim.formTyCd || '-'}</Badge>
                   </TableCell>
                   <TableCell className="text-sm">{claim.paperEdiCd || '-'}</TableCell>
+                  <TableCell className="text-sm">{claim.billTyCd || '-'}</TableCell>
                   <TableCell className="text-sm">{claim.billProv_stCd || '-'}</TableCell>
+                  <TableCell className="text-sm">{claim.billProv_city || '-'}</TableCell>
+                  <TableCell className="text-sm">{claim.billProv_dervCpfTyCd2 || '-'}</TableCell>
+                  <TableCell className="text-sm">
+                    {claim.patDemo_patAge && claim.patDemo_patAge > 0 ? claim.patDemo_patAge : '-'}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {claim.patDemo_patGndr ? claim.patDemo_patGndr.toUpperCase().substring(0, 1) : '-'}
+                  </TableCell>
                   <TableCell className="text-sm truncate max-w-[180px]" title={claim.billProv_nm}>
                     {claim.billProv_nm || '-'}
+                  </TableCell>
+                  <TableCell className="text-sm">{claim.benopt || '-'}</TableCell>
+                  <TableCell className="text-sm">{claim.billProv_dervParInd || '-'}</TableCell>
+                  <TableCell className="text-sm">{claim.billProv_ntCd || '-'}</TableCell>
+                  <TableCell className="text-sm">
+                    {claim.auditFlag && claim.auditFlag.trim() !== '' ? (
+                      <Badge variant={claim.auditFlag.trim().toUpperCase() === 'Y' ? 'default' : 'outline'}>
+                        {claim.auditFlag.trim()}
+                      </Badge>
+                    ) : '-'}
+                  </TableCell>
+                  <TableCell className="text-sm truncate max-w-[150px]" title={claim.appealReason}>
+                    {claim.appealReason && claim.appealReason.trim() !== '' ? claim.appealReason : '-'}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {claim.appealId && claim.appealId.trim() !== '' ? claim.appealId.trim() : '-'}
                   </TableCell>
                 </TableRow>
               ))}
@@ -180,7 +261,7 @@ export function ClaimsTable() {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/20">
+        <div className="flex items-center justify-between px-4 py-2 border-t bg-muted/20">
           <div className="text-sm text-muted-foreground">
             Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, sortedData.length)} of {sortedData.length} claims
           </div>

@@ -17,16 +17,16 @@ export function KPISummary() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 p-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 px-4 py-3">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-28 bg-muted animate-pulse rounded-xl" />
+          <div key={i} className="h-20 bg-muted animate-pulse rounded-lg" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 p-4 bg-card border-b">
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 px-4 py-3 bg-card border-b">
       <KPICard
         title="# Claims Inventory"
         value={kpiMetrics.totalClaims.toLocaleString()}

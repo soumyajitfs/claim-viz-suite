@@ -57,8 +57,32 @@ export default function ClaimLineDetails() {
   const claimInfo = claimsData.find(c => c.clmId === claimId);
 
   const totalChrgAmt = lineItems.reduce((sum, item) => sum + item.chrgAmt, 0);
-  const totalPaidAmt = lineItems.reduce((sum, item) => sum + item.paidAmt, 0);
-  const totalCvrdAmt = lineItems.reduce((sum, item) => sum + item.cvrdAmt, 0);
+
+  // Calculate distinct counts for Diagnosis Codes and Procedure Codes
+  const distinctDiagCodes = new Set(
+    lineItems
+      .map(item => item.diagCd?.trim())
+      .filter(code => code && code !== '' && code !== '-' && code !== 'null')
+  );
+  const distinctProcCodes = new Set(
+    lineItems
+      .map(item => item.procCd?.trim())
+      .filter(code => code && code !== '' && code !== '-' && code !== 'null')
+  );
+  const distinctRevCodes = new Set(
+    lineItems
+      .map(item => item.revnuCd?.trim())
+      .filter(code => code && code !== '' && code !== '-' && code !== 'null')
+  );
+
+  // Determine which metrics to show based on data availability
+  const hasDistinctDiagCodes = distinctDiagCodes.size > 0;
+  const hasDistinctProcCodes = distinctProcCodes.size > 0;
+  
+  // Priority: Try distinct counts first, fallback to procedure + revenue if diagnosis not possible
+  const showDiagCodeMetric = hasDistinctDiagCodes;
+  const showProcCodeMetric = true; // Always show procedure code
+  const showRevCodeMetric = !hasDistinctDiagCodes; // Show revenue code only if diagnosis not available
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,7 +112,7 @@ export default function ClaimLineDetails() {
       </header>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4">
+      <div className={`grid grid-cols-1 ${showDiagCodeMetric ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4 p-4`}>
         <Card className="bg-kpi text-kpi-foreground shadow-lg">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
@@ -117,33 +141,56 @@ export default function ClaimLineDetails() {
           </CardContent>
         </Card>
 
-        <Card className="bg-kpi text-kpi-foreground shadow-lg">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium opacity-90">Total Paid Amount</p>
-                <p className="text-3xl font-bold mt-1">{formatCurrency(totalPaidAmt)}</p>
+        {showDiagCodeMetric && (
+          <Card className="bg-kpi text-kpi-foreground shadow-lg">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium opacity-90">Diagnosis Codes</p>
+                  <p className="text-3xl font-bold mt-1">{distinctDiagCodes.size}</p>
+                  <p className="text-xs mt-1 opacity-75">Distinct</p>
+                </div>
+                <div className="p-3 bg-white/10 rounded-lg">
+                  <FileText className="h-6 w-6" />
+                </div>
               </div>
-              <div className="p-3 bg-white/10 rounded-lg">
-                <DollarSign className="h-6 w-6" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
-        <Card className="bg-kpi text-kpi-foreground shadow-lg">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium opacity-90">Total Covered Amount</p>
-                <p className="text-3xl font-bold mt-1">{formatCurrency(totalCvrdAmt)}</p>
+        {showProcCodeMetric && (
+          <Card className="bg-kpi text-kpi-foreground shadow-lg">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium opacity-90">Procedure Codes</p>
+                  <p className="text-3xl font-bold mt-1">{distinctProcCodes.size}</p>
+                  <p className="text-xs mt-1 opacity-75">Distinct</p>
+                </div>
+                <div className="p-3 bg-white/10 rounded-lg">
+                  <FileText className="h-6 w-6" />
+                </div>
               </div>
-              <div className="p-3 bg-white/10 rounded-lg">
-                <FileText className="h-6 w-6" />
+            </CardContent>
+          </Card>
+        )}
+
+        {showRevCodeMetric && (
+          <Card className="bg-kpi text-kpi-foreground shadow-lg">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium opacity-90">Revenue Codes</p>
+                  <p className="text-3xl font-bold mt-1">{distinctRevCodes.size}</p>
+                  <p className="text-xs mt-1 opacity-75">Distinct</p>
+                </div>
+                <div className="p-3 bg-white/10 rounded-lg">
+                  <FileText className="h-6 w-6" />
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Line Items Table */}

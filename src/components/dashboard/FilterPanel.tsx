@@ -24,6 +24,8 @@ export function FilterPanel() {
       aaInd: [],
       clmTyCd: [],
       formTyCd: [],
+      priority: [],
+      auditFlag: [],
       searchClaimId: '',
     });
   };
@@ -32,10 +34,12 @@ export function FilterPanel() {
     filters.aaInd.length + 
     filters.clmTyCd.length + 
     filters.formTyCd.length + 
+    filters.priority.length +
+    filters.auditFlag.length +
     (filters.searchClaimId ? 1 : 0);
 
   return (
-    <div className="bg-card border-b px-4 py-3">
+    <div className="bg-card border-b px-4 py-2">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Filter className="h-4 w-4" />
@@ -89,6 +93,34 @@ export function FilterPanel() {
             {filterOptions.formTyCd.map(option => (
               <SelectItem key={option} value={option}>{option}</SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={filters.priority[0] || 'all'}
+          onValueChange={(value) => handleFilterChange('priority', value)}
+        >
+          <SelectTrigger className="w-[130px] h-9 text-sm">
+            <SelectValue placeholder="Risk Level" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Risk</SelectItem>
+            <SelectItem value="High">High</SelectItem>
+            <SelectItem value="Medium">Medium</SelectItem>
+            <SelectItem value="Low">Low</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={filters.auditFlag[0] || 'all'}
+          onValueChange={(value) => handleFilterChange('auditFlag', value)}
+        >
+          <SelectTrigger className="w-[130px] h-9 text-sm">
+            <SelectValue placeholder="Audit Flag" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="Y">Y</SelectItem>
           </SelectContent>
         </Select>
 
