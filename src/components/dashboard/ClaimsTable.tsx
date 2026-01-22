@@ -199,6 +199,21 @@ export function ClaimsTable() {
                 <TableHead className="w-[100px]">Provider Nt Cd</TableHead>
                 <TableHead className="w-[150px]">Appeal Reason</TableHead>
                 <TableHead className="w-[100px]">Appeal ID</TableHead>
+                <TableHead className="w-[150px]">
+                  <SortableHeader field="benefitPlanUpdateDate">Benefit plan update date</SortableHeader>
+                </TableHead>
+                <TableHead className="w-[200px]">
+                  <SortableHeader field="billingProviderContractUpdateDate">Billing Provider contract update date</SortableHeader>
+                </TableHead>
+                <TableHead className="w-[120px]">
+                  <SortableHeader field="claimStatus">Claim Status</SortableHeader>
+                </TableHead>
+                <TableHead className="w-[130px]">
+                  <SortableHeader field="claimPaidDate">Claim Paid date</SortableHeader>
+                </TableHead>
+                <TableHead className="w-[180px]">
+                  <SortableHeader field="historicalAdjRateByVersion">historical_adj_rate_by_version</SortableHeader>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -219,9 +234,9 @@ export function ClaimsTable() {
                   </TableCell>
                   <TableCell className="font-mono">{claim.score.toFixed(2)}</TableCell>
                   <TableCell className="text-sm">
-                    {claim.auditFlag && claim.auditFlag.trim() !== '' ? (
-                      <Badge variant={claim.auditFlag.trim().toUpperCase() === 'Y' ? 'default' : 'outline'}>
-                        {claim.auditFlag.trim()}
+                    {claim.auditFlag && claim.auditFlag.trim() !== '' && claim.auditFlag.trim().toUpperCase() === 'Y' ? (
+                      <Badge className="bg-[hsl(192,65%,30%)] text-white hover:bg-[hsl(192,65%,30%)] font-medium">
+                        {claim.auditFlag.trim().toUpperCase()}
                       </Badge>
                     ) : '-'}
                   </TableCell>
@@ -253,6 +268,17 @@ export function ClaimsTable() {
                   </TableCell>
                   <TableCell className="text-sm">
                     {claim.appealId && claim.appealId.trim() !== '' ? claim.appealId.trim() : '-'}
+                  </TableCell>
+                  <TableCell>{formatDate(claim.benefitPlanUpdateDate)}</TableCell>
+                  <TableCell>{formatDate(claim.billingProviderContractUpdateDate)}</TableCell>
+                  <TableCell className="text-sm">
+                    {claim.claimStatus && claim.claimStatus.trim() !== '' ? (
+                      <Badge variant="outline">{claim.claimStatus.trim()}</Badge>
+                    ) : '-'}
+                  </TableCell>
+                  <TableCell>{formatDate(claim.claimPaidDate)}</TableCell>
+                  <TableCell className="text-sm">
+                    {claim.historicalAdjRateByVersion && claim.historicalAdjRateByVersion.trim() !== '' ? claim.historicalAdjRateByVersion.trim() : '-'}
                   </TableCell>
                 </TableRow>
               ))}

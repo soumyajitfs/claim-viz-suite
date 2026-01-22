@@ -19,7 +19,7 @@ export function useClaimsData() {
   useEffect(() => {
     async function loadData() {
       try {
-        const response = await fetch('/data/Masked Sample Data - claim & line.xlsx');
+        const response = await fetch('/data/Claim Data 1.xlsx');
         const arrayBuffer = await response.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true, cellNF: false, cellText: false });
 
@@ -64,6 +64,7 @@ export function useClaimsData() {
         // Debug: Log available column names to help identify the exact column names
         if (claimRaw.length > 0) {
           const allKeys = Object.keys(claimRaw[0]);
+          console.log('=== ALL AVAILABLE COLUMNS IN EXCEL ===');
           console.log('Available columns in Excel:', allKeys);
           // Find columns that might be Audit Flag or Appeal ID
           const auditFlagKeys = allKeys.filter(k => k.toLowerCase().includes('audit') || k.toLowerCase().includes('flag'));
@@ -72,8 +73,14 @@ export function useClaimsData() {
           console.log('Potential Audit Flag columns:', auditFlagKeys);
           console.log('Potential Appeal ID columns:', appealIdKeys);
           console.log('Potential Appeal Reason columns:', appealReasonKeys);
-          // Log first row to see actual values
-          if (claimRaw[0]) {
+          // Log first 10 rows to see actual values for Audit Flag
+          if (claimRaw.length > 0) {
+            console.log('=== AUDIT FLAG VALUES FROM FIRST 10 ROWS ===');
+            claimRaw.slice(0, 10).forEach((row, idx) => {
+              auditFlagKeys.forEach(key => {
+                console.log(`Row ${idx + 1}, Column "${key}":`, row[key], 'Type:', typeof row[key]);
+              });
+            });
             console.log('First row Audit Flag value:', claimRaw[0][auditFlagKeys[0]]);
             console.log('First row Appeal ID value:', claimRaw[0][appealIdKeys[0]]);
             console.log('First row Appeal Reason value:', claimRaw[0][appealReasonKeys[0]]);
@@ -84,13 +91,32 @@ export function useClaimsData() {
         let actualAuditFlagColumn: string | null = null;
         let actualAppealIdColumn: string | null = null;
         let actualAppealReasonColumn: string | null = null;
+        let actualBenefitPlanUpdateDateColumn: string | null = null;
+        let actualBillingProviderContractUpdateDateColumn: string | null = null;
+        let actualClaimStatusColumn: string | null = null;
+        let actualClaimPaidDateColumn: string | null = null;
+        let actualHistoricalAdjRateByVersionColumn: string | null = null;
         
         if (claimRaw.length > 0) {
           const allKeys = Object.keys(claimRaw[0]);
-          // Find Audit Flag column
+          // Find Audit Flag column - try multiple variations
           actualAuditFlagColumn = allKeys.find(k => 
+            k.toLowerCase().trim() === 'audit flag'
+          ) || allKeys.find(k => 
+            k.toLowerCase().replace(/\s+/g, ' ').trim() === 'audit flag'
+          ) || allKeys.find(k => 
             k.toLowerCase().includes('audit') && k.toLowerCase().includes('flag')
-          ) || allKeys.find(k => k.toLowerCase() === 'audit flag') || null;
+          ) || allKeys.find(k => 
+            k.toLowerCase() === 'auditflag'
+          ) || null;
+          
+          // Log sample values for debugging
+          if (actualAuditFlagColumn && claimRaw[0]) {
+            console.log('Audit Flag column found:', actualAuditFlagColumn);
+            console.log('Sample Audit Flag values:', claimRaw.slice(0, 5).map(r => r[actualAuditFlagColumn!]));
+          } else {
+            console.warn('Audit Flag column NOT found. Available columns:', allKeys);
+          }
           
           // Find Appeal ID column
           actualAppealIdColumn = allKeys.find(k => 
@@ -102,27 +128,69 @@ export function useClaimsData() {
             k.toLowerCase().includes('appeal') && k.toLowerCase().includes('reason')
           ) || allKeys.find(k => k.toLowerCase() === 'appeal reason') || null;
           
+          // Find Benefit plan update date column
+          actualBenefitPlanUpdateDateColumn = allKeys.find(k => 
+            k.toLowerCase().includes('benefit') && k.toLowerCase().includes('plan') && k.toLowerCase().includes('update') && k.toLowerCase().includes('date')
+          ) || allKeys.find(k => k.toLowerCase().includes('benefit plan update date')) || null;
+          
+          // Find Billing Provider contract update date column
+          actualBillingProviderContractUpdateDateColumn = allKeys.find(k => 
+            k.toLowerCase().includes('billing') && k.toLowerCase().includes('provider') && k.toLowerCase().includes('contract') && k.toLowerCase().includes('update') && k.toLowerCase().includes('date')
+          ) || allKeys.find(k => k.toLowerCase().includes('billing provider contract update date')) || null;
+          
+          // Find Claim Status column
+          actualClaimStatusColumn = allKeys.find(k => 
+            k.toLowerCase().includes('claim') && k.toLowerCase().includes('status')
+          ) || allKeys.find(k => k.toLowerCase() === 'claim status') || null;
+          
+          // Find Claim Paid date column
+          actualClaimPaidDateColumn = allKeys.find(k => 
+            k.toLowerCase().includes('claim') && k.toLowerCase().includes('paid') && k.toLowerCase().includes('date')
+          ) || allKeys.find(k => k.toLowerCase().includes('claim paid date')) || null;
+          
+          // Find historical_adj_rate_by_version column
+          actualHistoricalAdjRateByVersionColumn = allKeys.find(k => 
+            k.toLowerCase().includes('historical') && k.toLowerCase().includes('adj') && k.toLowerCase().includes('rate') && k.toLowerCase().includes('version')
+          ) || allKeys.find(k => k.toLowerCase() === 'historical_adj_rate_by_version' || k.toLowerCase().includes('historical_adj_rate')) || null;
+          
           console.log('Detected Audit Flag column:', actualAuditFlagColumn);
           console.log('Detected Appeal ID column:', actualAppealIdColumn);
           console.log('Detected Appeal Reason column:', actualAppealReasonColumn);
+          console.log('Detected Benefit plan update date column:', actualBenefitPlanUpdateDateColumn);
+          console.log('Detected Billing Provider contract update date column:', actualBillingProviderContractUpdateDateColumn);
+          console.log('Detected Claim Status column:', actualClaimStatusColumn);
+          console.log('Detected Claim Paid date column:', actualClaimPaidDateColumn);
+          console.log('Detected historical_adj_rate_by_version column:', actualHistoricalAdjRateByVersionColumn);
         }
 
         // Helper function to find column value with multiple name variations
         const getColumnValue = (row: Record<string, unknown>, possibleNames: string[], actualColumn: string | null = null): string => {
-          // First try the detected actual column name
-          if (actualColumn && row[actualColumn] !== null && row[actualColumn] !== undefined) {
-            const value = String(row[actualColumn]).trim();
-            if (value !== '' && value !== 'null' && value !== 'undefined') {
-              return value;
+          // First try the detected actual column name - this is the most reliable
+          if (actualColumn) {
+            const rawValue = row[actualColumn];
+            if (rawValue !== null && rawValue !== undefined) {
+              const value = String(rawValue).trim();
+              // Allow single character values like "Y" and don't filter them out
+              if (value !== '' && value !== 'null' && value !== 'undefined') {
+                return value;
+              }
+              // Even if it's empty string, return it for Audit Flag (to distinguish between empty and missing)
+              if (actualColumn.toLowerCase().includes('audit') && actualColumn.toLowerCase().includes('flag')) {
+                return value; // Return empty string for blank Audit Flag cells
+              }
             }
           }
           
           // Then try exact matches
           for (const name of possibleNames) {
-            if (row.hasOwnProperty(name) && row[name] !== null && row[name] !== undefined) {
-              const value = String(row[name]).trim();
-              if (value !== '' && value !== 'null' && value !== 'undefined') {
-                return value;
+            if (row.hasOwnProperty(name)) {
+              const rawValue = row[name];
+              if (rawValue !== null && rawValue !== undefined) {
+                const value = String(rawValue).trim();
+                // Allow single character values like "Y" and don't filter them out
+                if (value !== '' && value !== 'null' && value !== 'undefined') {
+                  return value;
+                }
               }
             }
           }
@@ -134,10 +202,14 @@ export function useClaimsData() {
               key.toLowerCase().trim() === possibleName.toLowerCase().trim() ||
               key.replace(/\s+/g, ' ').toLowerCase() === possibleName.replace(/\s+/g, ' ').toLowerCase()
             );
-            if (foundKey && row[foundKey] !== null && row[foundKey] !== undefined) {
-              const value = String(row[foundKey]).trim();
-              if (value !== '' && value !== 'null' && value !== 'undefined') {
-                return value;
+            if (foundKey) {
+              const rawValue = row[foundKey];
+              if (rawValue !== null && rawValue !== undefined) {
+                const value = String(rawValue).trim();
+                // Allow single character values like "Y" and don't filter them out
+                if (value !== '' && value !== 'null' && value !== 'undefined') {
+                  return value;
+                }
               }
             }
           }
@@ -174,9 +246,62 @@ export function useClaimsData() {
             benopt: String(row['benopt'] || ''),
             billProv_dervParInd: String(row['billProv_dervParInd'] || ''),
             billProv_ntCd: String(row['billProv_ntCd'] || ''),
-            auditFlag: getColumnValue(row, ['Audit Flag', 'auditFlag', 'AuditFlag', 'audit flag', 'AUDIT FLAG', 'Audit_Flag'], actualAuditFlagColumn),
+            auditFlag: (() => {
+              // Special handling for Audit Flag - try ALL possible column name variations directly
+              const rowKeys = Object.keys(row);
+              
+              // Try the detected column first
+              if (actualAuditFlagColumn) {
+                const rawValue = row[actualAuditFlagColumn];
+                if (rawValue !== null && rawValue !== undefined) {
+                  const value = String(rawValue).trim();
+                  if (value !== '' && value !== 'null' && value !== 'undefined') {
+                    return value;
+                  }
+                }
+              }
+              
+              // Try all possible column name variations directly from row
+              const possibleNames = [
+                'Audit Flag', 'auditFlag', 'AuditFlag', 'audit flag', 'AUDIT FLAG', 
+                'Audit_Flag', 'AuditFlag', 'Audit Flag ', ' Audit Flag', 'Audit  Flag'
+              ];
+              
+              for (const name of possibleNames) {
+                if (row.hasOwnProperty(name)) {
+                  const rawValue = row[name];
+                  if (rawValue !== null && rawValue !== undefined) {
+                    const value = String(rawValue).trim();
+                    if (value !== '' && value !== 'null' && value !== 'undefined') {
+                      return value;
+                    }
+                  }
+                }
+              }
+              
+              // Try case-insensitive match on all row keys
+              for (const key of rowKeys) {
+                const lowerKey = key.toLowerCase().trim();
+                if ((lowerKey.includes('audit') && lowerKey.includes('flag')) || lowerKey === 'audit flag') {
+                  const rawValue = row[key];
+                  if (rawValue !== null && rawValue !== undefined) {
+                    const value = String(rawValue).trim();
+                    // Return ANY value including "Y", empty string, etc.
+                    return value;
+                  }
+                }
+              }
+              
+              // If nothing found, return empty string
+              return '';
+            })(),
             appealReason: getColumnValue(row, ['Appeal Reason', 'appealReason', 'AppealReason', 'appeal reason', 'APPEAL REASON', 'Appeal_Reason'], actualAppealReasonColumn),
             appealId: getColumnValue(row, ['Appeal ID', 'appealId', 'AppealId', 'appeal id', 'APPEAL ID', 'AppealID', 'Appeal_ID'], actualAppealIdColumn),
+            benefitPlanUpdateDate: convertExcelDate(getColumnValue(row, ['Benefit plan update date', 'benefitPlanUpdateDate', 'BenefitPlanUpdateDate', 'benefit plan update date', 'BENEFIT PLAN UPDATE DATE', 'Benefit_Plan_Update_Date'], actualBenefitPlanUpdateDateColumn)),
+            billingProviderContractUpdateDate: convertExcelDate(getColumnValue(row, ['Billing Provider contract update date', 'billingProviderContractUpdateDate', 'BillingProviderContractUpdateDate', 'billing provider contract update date', 'BILLING PROVIDER CONTRACT UPDATE DATE', 'Billing_Provider_Contract_Update_Date'], actualBillingProviderContractUpdateDateColumn)),
+            claimStatus: getColumnValue(row, ['Claim Status', 'claimStatus', 'ClaimStatus', 'claim status', 'CLAIM STATUS', 'Claim_Status'], actualClaimStatusColumn),
+            claimPaidDate: convertExcelDate(getColumnValue(row, ['Claim Paid date', 'claimPaidDate', 'ClaimPaidDate', 'claim paid date', 'CLAIM PAID DATE', 'Claim_Paid_Date'], actualClaimPaidDateColumn)),
+            historicalAdjRateByVersion: getColumnValue(row, ['historical_adj_rate_by_version', 'historicalAdjRateByVersion', 'HistoricalAdjRateByVersion', 'historical adj rate by version', 'HISTORICAL_ADJ_RATE_BY_VERSION'], actualHistoricalAdjRateByVersionColumn),
           };
         });
 

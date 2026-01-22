@@ -26,6 +26,11 @@ export interface ClaimData {
   auditFlag: string;
   appealReason: string;
   appealId: string;
+  benefitPlanUpdateDate: string;
+  billingProviderContractUpdateDate: string;
+  claimStatus: string;
+  claimPaidDate: string;
+  historicalAdjRateByVersion: string;
 }
 
 export interface LineData {
