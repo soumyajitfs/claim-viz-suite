@@ -65,6 +65,7 @@ export interface FilterState {
   formTyCd: string[];
   priority: string[];
   auditFlag: string[];
+  claimStatus: string[];
   searchClaimId: string;
 }
 

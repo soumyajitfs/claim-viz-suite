@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, Ex
 import { cn } from '@/lib/utils';
 import { ClaimData } from '@/types/claims';
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 5;
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -37,6 +37,29 @@ function formatDate(dateStr: string): string {
   
   if (isNaN(date.getTime())) return dateStr;
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function formatPercentage(value: string): string {
+  if (!value || value.trim() === '' || value === 'null' || value === 'undefined') return '-';
+  
+  // Remove any existing % sign and trim whitespace
+  const cleanedValue = value.trim().replace(/%/g, '');
+  const numValue = parseFloat(cleanedValue);
+  
+  // If not a valid number, return the original value
+  if (isNaN(numValue)) return value;
+  
+  // If value is between 0 and 1 (e.g., 0.15), treat as decimal and convert to percentage
+  // If value is >= 1 (e.g., 15), treat as already a percentage
+  let percentageValue: number;
+  if (numValue > 0 && numValue <= 1) {
+    percentageValue = numValue * 100;
+  } else {
+    percentageValue = numValue;
+  }
+  
+  // Format with 2 decimal places and add % sign
+  return `${percentageValue.toFixed(2)}%`;
 }
 
 function RiskBadge({ risk }: { risk: string }) {
@@ -126,11 +149,11 @@ export function ClaimsTable() {
     <Button
       variant="ghost"
       size="sm"
-      className="h-8 -ml-3 gap-1 font-semibold text-muted-foreground hover:text-foreground"
+      className="h-8 -ml-3 gap-1 font-semibold text-muted-foreground hover:text-foreground whitespace-nowrap"
       onClick={() => handleSort(field)}
     >
       {children}
-      <ArrowUpDown className="h-3 w-3" />
+      <ArrowUpDown className="h-3 w-3 flex-shrink-0" />
     </Button>
   );
 
@@ -144,75 +167,81 @@ export function ClaimsTable() {
         
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur-sm">
               <TableRow className="bg-muted/20 hover:bg-muted/20">
-                <TableHead className="w-[120px]">
+                <TableHead className="w-[120px] whitespace-nowrap">
                   <SortableHeader field="clmId">Claim ID</SortableHeader>
                 </TableHead>
-                <TableHead className="w-[100px]">
+                <TableHead className="w-[100px] whitespace-nowrap">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 -ml-3 gap-1 font-semibold text-muted-foreground hover:text-foreground"
+                    className="h-8 -ml-3 gap-1 font-semibold text-muted-foreground hover:text-foreground whitespace-nowrap"
                     onClick={handleRiskFilter}
                   >
                     Model classification {riskFilter !== 'all' && `(${riskFilter})`}
-                    <ArrowUpDown className="h-3 w-3" />
+                    <ArrowUpDown className="h-3 w-3 flex-shrink-0" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[80px]">
+                <TableHead className="w-[80px] whitespace-nowrap">
                   <SortableHeader field="score">Score</SortableHeader>
                 </TableHead>
-                <TableHead className="w-[100px]">Audit Flag</TableHead>
-                <TableHead className="w-[130px]">
+                <TableHead className="w-[100px] whitespace-nowrap">Audit Flag</TableHead>
+                <TableHead className="w-[130px] whitespace-nowrap">
                   <SortableHeader field="rcvdTs">Received Date</SortableHeader>
                 </TableHead>
-                <TableHead className="w-[130px]">
+                <TableHead className="w-[130px] whitespace-nowrap">
                   <SortableHeader field="clmAmt_totChrgAmt">Claim Amount</SortableHeader>
                 </TableHead>
-                <TableHead className="w-[130px]">
+                <TableHead className="w-[130px] whitespace-nowrap">
                   <SortableHeader field="clmAmt_totAllowAmt">Allow Amount</SortableHeader>
                 </TableHead>
-                <TableHead className="w-[100px]">Form Type</TableHead>
-                <TableHead className="w-[100px]">
+                <TableHead className="w-[100px] whitespace-nowrap">Form Type</TableHead>
+                <TableHead className="w-[100px] whitespace-nowrap">
                   <SortableHeader field="paperEdiCd">paperEdiCd</SortableHeader>
                 </TableHead>
-                <TableHead className="w-[100px]">
+                <TableHead className="w-[100px] whitespace-nowrap">
                   <SortableHeader field="billTyCd">billTyCd</SortableHeader>
                 </TableHead>
-                <TableHead className="w-[100px]">
+                <TableHead className="w-[100px] whitespace-nowrap">
                   <SortableHeader field="billProv_stCd">billProv_stCd</SortableHeader>
                 </TableHead>
-                <TableHead className="w-[120px]">Provider City</TableHead>
-                <TableHead className="w-[150px]">
+                <TableHead className="w-[120px] whitespace-nowrap">Provider City</TableHead>
+                <TableHead className="w-[150px] whitespace-nowrap">
                   <SortableHeader field="billProv_dervCpfTyCd2">Provider Speciality</SortableHeader>
                 </TableHead>
-                <TableHead className="w-[80px]">
+                <TableHead className="w-[80px] whitespace-nowrap">
                   <SortableHeader field="patDemo_patAge">Age</SortableHeader>
                 </TableHead>
-                <TableHead className="w-[100px]">
+                <TableHead className="w-[100px] whitespace-nowrap">
                   <SortableHeader field="patDemo_patGndr">Gender</SortableHeader>
                 </TableHead>
-                <TableHead className="w-[180px]">Provider</TableHead>
-                <TableHead className="w-[100px]">Benopt</TableHead>
-                <TableHead className="w-[120px]">Provider Par Ind</TableHead>
-                <TableHead className="w-[100px]">Provider Nt Cd</TableHead>
-                <TableHead className="w-[150px]">Appeal Reason</TableHead>
-                <TableHead className="w-[100px]">Appeal ID</TableHead>
+                <TableHead className="w-[180px] whitespace-nowrap">Provider</TableHead>
+                <TableHead className="w-[100px] whitespace-nowrap">Benopt</TableHead>
+                <TableHead className="w-[120px] whitespace-nowrap">Provider Par Ind</TableHead>
+                <TableHead className="w-[100px] whitespace-nowrap">Provider Nt Cd</TableHead>
+                <TableHead className="w-[150px] whitespace-nowrap">Appeal Reason</TableHead>
+                <TableHead className="w-[100px] whitespace-nowrap">Appeal ID</TableHead>
                 <TableHead className="w-[150px]">
-                  <SortableHeader field="benefitPlanUpdateDate">Benefit plan update date</SortableHeader>
+                  <SortableHeader field="benefitPlanUpdateDate">
+                    <span className="whitespace-nowrap">Benefit plan update date</span>
+                  </SortableHeader>
                 </TableHead>
-                <TableHead className="w-[200px]">
-                  <SortableHeader field="billingProviderContractUpdateDate">Billing Provider contract update date</SortableHeader>
+                <TableHead className="w-[150px]">
+                  <SortableHeader field="billingProviderContractUpdateDate">
+                    <span className="whitespace-nowrap">Billing Provider contract update date</span>
+                  </SortableHeader>
                 </TableHead>
-                <TableHead className="w-[120px]">
+                <TableHead className="w-[120px] whitespace-nowrap">
                   <SortableHeader field="claimStatus">Claim Status</SortableHeader>
                 </TableHead>
-                <TableHead className="w-[130px]">
+                <TableHead className="w-[130px] whitespace-nowrap">
                   <SortableHeader field="claimPaidDate">Claim Paid date</SortableHeader>
                 </TableHead>
-                <TableHead className="w-[180px]">
-                  <SortableHeader field="historicalAdjRateByVersion">historical_adj_rate_by_version</SortableHeader>
+                <TableHead className="w-[150px]">
+                  <SortableHeader field="historicalAdjRateByVersion">
+                    <span className="whitespace-nowrap">Historical Adj Rate</span>
+                  </SortableHeader>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -278,7 +307,7 @@ export function ClaimsTable() {
                   </TableCell>
                   <TableCell>{formatDate(claim.claimPaidDate)}</TableCell>
                   <TableCell className="text-sm">
-                    {claim.historicalAdjRateByVersion && claim.historicalAdjRateByVersion.trim() !== '' ? claim.historicalAdjRateByVersion.trim() : '-'}
+                    {formatPercentage(claim.historicalAdjRateByVersion)}
                   </TableCell>
                 </TableRow>
               ))}

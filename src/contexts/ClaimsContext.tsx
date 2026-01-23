@@ -13,6 +13,7 @@ interface ClaimsContextType {
     aaInd: string[];
     clmTyCd: string[];
     formTyCd: string[];
+    claimStatus: string[];
   };
   kpiMetrics: {
     totalClaims: number;

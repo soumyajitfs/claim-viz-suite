@@ -13,13 +13,14 @@ export function useClaimsData() {
     formTyCd: [],
     priority: [],
     auditFlag: [],
+    claimStatus: [],
     searchClaimId: '',
   });
 
   useEffect(() => {
     async function loadData() {
       try {
-        const response = await fetch('/data/Claim Data 1.xlsx');
+        const response = await fetch('/data/Claim Data 2.xlsx');
         const arrayBuffer = await response.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true, cellNF: false, cellText: false });
 
@@ -458,6 +459,7 @@ export function useClaimsData() {
       aaInd: [...new Set(claimsData.map(c => c.aaInd))].filter(Boolean).sort(),
       clmTyCd: [...new Set(claimsData.map(c => c.clmTyCd))].filter(Boolean).sort(),
       formTyCd: [...new Set(claimsData.map(c => c.formTyCd))].filter(Boolean).sort(),
+      claimStatus: [...new Set(claimsData.map(c => c.claimStatus))].filter(Boolean).sort(),
     };
   }, [claimsData]);
 
@@ -470,6 +472,10 @@ export function useClaimsData() {
       if (filters.auditFlag.length > 0) {
         const claimAuditFlag = claim.auditFlag?.trim().toUpperCase() || '';
         if (!filters.auditFlag.some(flag => claimAuditFlag === flag.trim().toUpperCase())) return false;
+      }
+      if (filters.claimStatus.length > 0) {
+        const claimStatus = claim.claimStatus?.trim() || '';
+        if (!filters.claimStatus.some(status => claimStatus === status.trim())) return false;
       }
       if (filters.searchClaimId && !claim.clmId.toLowerCase().includes(filters.searchClaimId.toLowerCase())) return false;
       return true;

@@ -58,31 +58,30 @@ export default function ClaimLineDetails() {
 
   const totalChrgAmt = lineItems.reduce((sum, item) => sum + item.chrgAmt, 0);
 
-  // Calculate distinct counts for Diagnosis Codes and Procedure Codes
+  // Calculate distinct counts for Diagnosis Codes
   const distinctDiagCodes = new Set(
     lineItems
       .map(item => item.diagCd?.trim())
       .filter(code => code && code !== '' && code !== '-' && code !== 'null')
   );
-  const distinctProcCodes = new Set(
-    lineItems
-      .map(item => item.procCd?.trim())
-      .filter(code => code && code !== '' && code !== '-' && code !== 'null')
-  );
-  const distinctRevCodes = new Set(
-    lineItems
-      .map(item => item.revnuCd?.trim())
-      .filter(code => code && code !== '' && code !== '-' && code !== 'null')
-  );
+  
+  // Calculate total count (not distinct) for Procedure Codes
+  const procCodeCount = lineItems.filter(
+    item => item.procCd?.trim() && item.procCd.trim() !== '' && item.procCd.trim() !== '-' && item.procCd.trim() !== 'null'
+  ).length;
+  
+  // Calculate total count (not distinct) for Revenue Codes
+  const revCodeCount = lineItems.filter(
+    item => item.revnuCd?.trim() && item.revnuCd.trim() !== '' && item.revnuCd.trim() !== '-' && item.revnuCd.trim() !== 'null'
+  ).length;
 
   // Determine which metrics to show based on data availability
   const hasDistinctDiagCodes = distinctDiagCodes.size > 0;
-  const hasDistinctProcCodes = distinctProcCodes.size > 0;
   
   // Priority: Try distinct counts first, fallback to procedure + revenue if diagnosis not possible
   const showDiagCodeMetric = hasDistinctDiagCodes;
   const showProcCodeMetric = true; // Always show procedure code
-  const showRevCodeMetric = !hasDistinctDiagCodes; // Show revenue code only if diagnosis not available
+  const showRevCodeMetric = true; // Always show revenue code count
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,9 +101,16 @@ export default function ClaimLineDetails() {
             <p className="text-sm text-white/70">
               Claim ID: <span className="font-semibold text-white">{claimId}</span>
               {claimInfo && (
-                <span className="ml-4">
-                  • {claimInfo.billProv_nm} • {claimInfo.billProv_stCd}
-                </span>
+                <>
+                  <span className="ml-4">
+                    • {claimInfo.billProv_nm} • {claimInfo.billProv_stCd}
+                  </span>
+                  {claimInfo.formTyCd && (
+                    <span className="ml-4">
+                      • Form Type: <span className="font-semibold text-white">{claimInfo.formTyCd}</span>
+                    </span>
+                  )}
+                </>
               )}
             </p>
           </div>
@@ -112,7 +118,7 @@ export default function ClaimLineDetails() {
       </header>
 
       {/* KPI Cards */}
-      <div className={`grid grid-cols-1 ${showDiagCodeMetric ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4 p-4`}>
+      <div className={`grid grid-cols-1 ${showDiagCodeMetric ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4 p-4`}>
         <Card className="bg-kpi text-kpi-foreground shadow-lg">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
@@ -164,8 +170,8 @@ export default function ClaimLineDetails() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium opacity-90">Procedure Codes</p>
-                  <p className="text-3xl font-bold mt-1">{distinctProcCodes.size}</p>
-                  <p className="text-xs mt-1 opacity-75">Distinct</p>
+                  <p className="text-3xl font-bold mt-1">{procCodeCount}</p>
+                  <p className="text-xs mt-1 opacity-75">Count</p>
                 </div>
                 <div className="p-3 bg-white/10 rounded-lg">
                   <FileText className="h-6 w-6" />
@@ -181,8 +187,8 @@ export default function ClaimLineDetails() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium opacity-90">Revenue Codes</p>
-                  <p className="text-3xl font-bold mt-1">{distinctRevCodes.size}</p>
-                  <p className="text-xs mt-1 opacity-75">Distinct</p>
+                  <p className="text-3xl font-bold mt-1">{revCodeCount}</p>
+                  <p className="text-xs mt-1 opacity-75">Count</p>
                 </div>
                 <div className="p-3 bg-white/10 rounded-lg">
                   <FileText className="h-6 w-6" />
