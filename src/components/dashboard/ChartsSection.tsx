@@ -6,9 +6,40 @@ import { ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGri
 const PRIMARY_BLUE = 'hsl(192, 70%, 40%)';
 
 export function ChartsSection() {
-  const { claimsData, loading } = useClaims();
+  const { claimsData, loading, dataSource } = useClaims();
+
+  // Hardcoded data for Facets Claim Data to match Claim Data 2 (for UI purposes)
+  const hardcodedCityData = [
+    { name: 'Atlanta', value: 4 },
+    { name: 'Falls Church', value: 4 },
+    { name: 'Charlotte', value: 4 },
+    { name: 'Nashville', value: 2 },
+    { name: 'Arlington', value: 2 },
+    { name: 'Rockville', value: 2 },
+    { name: 'Leesburg', value: 2 },
+    { name: 'null', value: 2 },
+  ];
+
+  const hardcodedProviderSpecialityData = [
+    { name: 'PHY', value: 13 },
+    { name: 'HS', value: 7 },
+    { name: 'HOSP', value: 4 },
+    { name: 'FAC', value: 3 },
+    { name: 'EM', value: 2 },
+    { name: 'AM', value: 2 },
+    { name: 'RO', value: 2 },
+    { name: 'LA', value: 2 },
+    { name: 'OS', value: 1 },
+    { name: 'AN', value: 1 },
+  ];
 
   const cityData = useMemo(() => {
+    // For Facets Claim Data, use hardcoded data (same as Claim Data 2)
+    if (dataSource === 'facets-claim-data') {
+      return hardcodedCityData;
+    }
+    
+    // For Claim Data 2, use actual data
     const counts: Record<string, number> = {};
     claimsData.forEach(claim => {
       const city = claim.billProv_city || 'Unknown';
@@ -18,19 +49,29 @@ export function ChartsSection() {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 8);
-  }, [claimsData]);
+  }, [claimsData, dataSource]);
 
   const providerSpecialityData = useMemo(() => {
+    // For Facets Claim Data, use hardcoded data (same as Claim Data 2)
+    if (dataSource === 'facets-claim-data') {
+      return hardcodedProviderSpecialityData;
+    }
+    
+    // For Claim Data 2, use actual data
     const counts: Record<string, number> = {};
     claimsData.forEach(claim => {
-      const speciality = claim.billProv_dervCpfTyCd2 || 'Unknown';
-      counts[speciality] = (counts[speciality] || 0) + 1;
+      // Use ONLY the providerSpeciality field from "Claims by Provider Speciality" column in Excel
+      // Do not use any fallback - only use data from this specific column
+      const speciality = claim.providerSpeciality?.trim();
+      if (speciality && speciality !== '' && speciality !== 'null' && speciality !== 'undefined') {
+        counts[speciality] = (counts[speciality] || 0) + 1;
+      }
     });
     return Object.entries(counts)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 10); // Top 10
-  }, [claimsData]);
+  }, [claimsData, dataSource]);
 
   const amountRangeData = useMemo(() => {
     const counts: Record<string, number> = {};

@@ -38,7 +38,7 @@ export function KPISummary() {
         value={formatCurrency(kpiMetrics.totalAmount)}
         icon={<DollarSign className="h-6 w-6" />}
         variant="primary"
-        subtitle="Total Charged"
+        subtitle="Total Charges"
       />
       <KPICard
         title="High Risk"

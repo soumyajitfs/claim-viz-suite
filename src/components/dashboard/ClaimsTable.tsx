@@ -4,11 +4,13 @@ import { useClaims } from '@/contexts/ClaimsContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ClaimData } from '@/types/claims';
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 10;
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -81,7 +83,7 @@ type SortField = keyof ClaimData;
 type SortDirection = 'asc' | 'desc';
 
 export function ClaimsTable() {
-  const { claimsData, loading } = useClaims();
+  const { claimsData, loading, dataSource, toggleDataSource, dataSourceLabel } = useClaims();
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<SortField>('score');
@@ -161,8 +163,30 @@ export function ClaimsTable() {
     <div className="px-4 pb-4">
       <div className="bg-card rounded-lg border shadow-sm overflow-hidden">
         <div className="px-4 py-2 border-b bg-muted/30">
-          <h3 className="text-sm font-semibold text-foreground">Claims Inventory</h3>
-          <p className="text-xs text-muted-foreground">Click on a claim to view line item details</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Claims Inventory</h3>
+              <p className="text-xs text-muted-foreground">Click on a claim to view line item details</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="data-source-toggle" className="text-xs text-muted-foreground cursor-pointer">
+                  Nasco Claim data
+                </Label>
+                <Switch
+                  id="data-source-toggle"
+                  checked={dataSource === 'facets-claim-data'}
+                  onCheckedChange={toggleDataSource}
+                />
+                <Label htmlFor="data-source-toggle" className="text-xs text-muted-foreground cursor-pointer">
+                  Facets Claim Data
+                </Label>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {dataSourceLabel}
+              </Badge>
+            </div>
+          </div>
         </div>
         
         <div className="overflow-x-auto">
@@ -187,6 +211,7 @@ export function ClaimsTable() {
                   <SortableHeader field="score">Score</SortableHeader>
                 </TableHead>
                 <TableHead className="w-[100px] whitespace-nowrap">Audit Flag</TableHead>
+                <TableHead className="w-[180px] whitespace-nowrap">Audit or Processing Action</TableHead>
                 <TableHead className="w-[130px] whitespace-nowrap">
                   <SortableHeader field="rcvdTs">Received Date</SortableHeader>
                 </TableHead>
@@ -196,9 +221,9 @@ export function ClaimsTable() {
                 <TableHead className="w-[130px] whitespace-nowrap">
                   <SortableHeader field="clmAmt_totAllowAmt">Allow Amount</SortableHeader>
                 </TableHead>
-                <TableHead className="w-[100px] whitespace-nowrap">Form Type</TableHead>
-                <TableHead className="w-[100px] whitespace-nowrap">
-                  <SortableHeader field="paperEdiCd">paperEdiCd</SortableHeader>
+                <TableHead className="w-[150px] whitespace-nowrap">Claim Form Type Code</TableHead>
+                <TableHead className="w-[200px] whitespace-nowrap">
+                  <SortableHeader field="paperEdiCd">Paper or EDI Submission Code</SortableHeader>
                 </TableHead>
                 <TableHead className="w-[100px] whitespace-nowrap">
                   <SortableHeader field="billTyCd">billTyCd</SortableHeader>
@@ -217,9 +242,7 @@ export function ClaimsTable() {
                   <SortableHeader field="patDemo_patGndr">Gender</SortableHeader>
                 </TableHead>
                 <TableHead className="w-[180px] whitespace-nowrap">Provider</TableHead>
-                <TableHead className="w-[100px] whitespace-nowrap">Benopt</TableHead>
-                <TableHead className="w-[120px] whitespace-nowrap">Provider Par Ind</TableHead>
-                <TableHead className="w-[100px] whitespace-nowrap">Provider Nt Cd</TableHead>
+                <TableHead className="w-[120px] whitespace-nowrap">Benefit Option</TableHead>
                 <TableHead className="w-[150px] whitespace-nowrap">Appeal Reason</TableHead>
                 <TableHead className="w-[100px] whitespace-nowrap">Appeal ID</TableHead>
                 <TableHead className="w-[150px]">
@@ -269,6 +292,11 @@ export function ClaimsTable() {
                       </Badge>
                     ) : '-'}
                   </TableCell>
+                  <TableCell className="text-sm">
+                    {claim.auditOrProcessingAction && claim.auditOrProcessingAction.trim() !== '' ? (
+                      <Badge variant="outline">{claim.auditOrProcessingAction.trim()}</Badge>
+                    ) : '-'}
+                  </TableCell>
                   <TableCell>{formatDate(claim.rcvdTs)}</TableCell>
                   <TableCell className="font-medium">{formatCurrency(claim.clmAmt_totChrgAmt)}</TableCell>
                   <TableCell className="font-medium">{formatCurrency(claim.clmAmt_totAllowAmt)}</TableCell>
@@ -290,8 +318,6 @@ export function ClaimsTable() {
                     {claim.billProv_nm || '-'}
                   </TableCell>
                   <TableCell className="text-sm">{claim.benopt || '-'}</TableCell>
-                  <TableCell className="text-sm">{claim.billProv_dervParInd || '-'}</TableCell>
-                  <TableCell className="text-sm">{claim.billProv_ntCd || '-'}</TableCell>
                   <TableCell className="text-sm truncate max-w-[150px]" title={claim.appealReason}>
                     {claim.appealReason && claim.appealReason.trim() !== '' ? claim.appealReason : '-'}
                   </TableCell>

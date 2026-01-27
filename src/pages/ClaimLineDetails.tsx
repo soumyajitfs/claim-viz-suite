@@ -53,8 +53,17 @@ export default function ClaimLineDetails() {
     );
   }
 
-  const lineItems = getLineItemsForClaim(claimId || '');
-  const claimInfo = claimsData.find(c => c.clmId === claimId);
+  // Normalize claim ID for matching (works for both Claim Data 2 and Facets Claim Data)
+  const normalizedClaimId = (claimId || '').trim();
+  const lineItems = getLineItemsForClaim(normalizedClaimId);
+  const claimInfo = claimsData.find(c => {
+    const normalizedClaimClmId = c.clmId.trim();
+    // Try exact match first
+    if (normalizedClaimClmId === normalizedClaimId) return true;
+    // Try case-insensitive match
+    if (normalizedClaimClmId.toLowerCase() === normalizedClaimId.toLowerCase()) return true;
+    return false;
+  });
 
   const totalChrgAmt = lineItems.reduce((sum, item) => sum + item.chrgAmt, 0);
 
@@ -107,7 +116,7 @@ export default function ClaimLineDetails() {
                   </span>
                   {claimInfo.formTyCd && (
                     <span className="ml-4">
-                      • Form Type: <span className="font-semibold text-white">{claimInfo.formTyCd}</span>
+                      • Claim Form Type Code: <span className="font-semibold text-white">{claimInfo.formTyCd}</span>
                     </span>
                   )}
                 </>
@@ -216,28 +225,27 @@ export default function ClaimLineDetails() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/20">
-                      <TableHead>chrgAmt</TableHead>
-                      <TableHead>clmLnNum</TableHead>
-                      <TableHead>ediLnNum</TableHead>
-                      <TableHead>coinsAmt</TableHead>
-                      <TableHead>cvrdAmt</TableHead>
-                      <TableHead>dedAmt</TableHead>
-                      <TableHead>lnBeginDt</TableHead>
-                      <TableHead>lnEndDt</TableHead>
-                      <TableHead>ndc</TableHead>
-                      <TableHead>paidAmt</TableHead>
-                      <TableHead>posCd</TableHead>
-                      <TableHead>preAuthInd</TableHead>
-                      <TableHead>revnuCd</TableHead>
-                      <TableHead>rmTyp</TableHead>
-                      <TableHead>serviceId</TableHead>
-                      <TableHead>procCd</TableHead>
-                      <TableHead>diagCd</TableHead>
-                      <TableHead>rncCd</TableHead>
-                      <TableHead>drugUnits</TableHead>
-                      <TableHead>drugUom</TableHead>
-                      <TableHead>count</TableHead>
-                      <TableHead>uom</TableHead>
+                      <TableHead>Charge Amount</TableHead>
+                      <TableHead>Claim Line Number</TableHead>
+                      <TableHead>EDI Line Number</TableHead>
+                      <TableHead>Coinsurance Amount</TableHead>
+                      <TableHead>Covered Amount</TableHead>
+                      <TableHead>Deductible Amount</TableHead>
+                      <TableHead>Line Begin Date</TableHead>
+                      <TableHead>Line End Date</TableHead>
+                      <TableHead>NDC</TableHead>
+                      <TableHead>Paid Amount</TableHead>
+                      <TableHead>Place of Service Code</TableHead>
+                      <TableHead>Pre Authorization Indicator</TableHead>
+                      <TableHead>Revenue Code</TableHead>
+                      <TableHead>Room Type</TableHead>
+                      <TableHead>Procedure Code</TableHead>
+                      <TableHead>Diagnosis Code</TableHead>
+                      <TableHead>Reason Not Covered Code</TableHead>
+                      <TableHead>Drug Units</TableHead>
+                      <TableHead>Drug UOM</TableHead>
+                      <TableHead>Count</TableHead>
+                      <TableHead>UOM</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -257,7 +265,6 @@ export default function ClaimLineDetails() {
                         <TableCell>{displayValue(item.preAuthInd)}</TableCell>
                         <TableCell>{displayValue(item.revnuCd)}</TableCell>
                         <TableCell>{displayValue(item.rmTyp)}</TableCell>
-                        <TableCell>{displayValue(item.serviceId)}</TableCell>
                         <TableCell>{displayValue(item.procCd)}</TableCell>
                         <TableCell>{displayValue(item.diagCd)}</TableCell>
                         <TableCell>{displayValue(item.rncCd)}</TableCell>

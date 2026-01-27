@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { ClaimData, LineData, FilterState, getRiskLevel, getAmountRange } from '@/types/claims';
 
-export function useClaimsData() {
+export function useClaimsData(excelFileName: string = 'Claim Data 2.xlsx') {
   const [claimsData, setClaimsData] = useState<ClaimData[]>([]);
   const [lineData, setLineData] = useState<LineData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +20,9 @@ export function useClaimsData() {
   useEffect(() => {
     async function loadData() {
       try {
-        const response = await fetch('/data/Claim Data 2.xlsx');
+        setLoading(true);
+        setError(null);
+        const response = await fetch(`/data/${excelFileName}`);
         const arrayBuffer = await response.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true, cellNF: false, cellText: false });
 
@@ -90,6 +92,8 @@ export function useClaimsData() {
         
         // Find actual column names from Excel
         let actualAuditFlagColumn: string | null = null;
+        let actualAuditOrProcessingActionColumn: string | null = null;
+        let actualProviderSpecialityColumn: string | null = null;
         let actualAppealIdColumn: string | null = null;
         let actualAppealReasonColumn: string | null = null;
         let actualBenefitPlanUpdateDateColumn: string | null = null;
@@ -154,7 +158,30 @@ export function useClaimsData() {
             k.toLowerCase().includes('historical') && k.toLowerCase().includes('adj') && k.toLowerCase().includes('rate') && k.toLowerCase().includes('version')
           ) || allKeys.find(k => k.toLowerCase() === 'historical_adj_rate_by_version' || k.toLowerCase().includes('historical_adj_rate')) || null;
           
+          // Find Audit or Processing Action column
+          actualAuditOrProcessingActionColumn = allKeys.find(k => 
+            k.toLowerCase().includes('audit') && k.toLowerCase().includes('processing') && k.toLowerCase().includes('action')
+          ) || allKeys.find(k => 
+            k.toLowerCase().includes('audit') && k.toLowerCase().includes('or') && k.toLowerCase().includes('processing')
+          ) || allKeys.find(k => 
+            k.toLowerCase() === 'audit or processing action' || k.toLowerCase().includes('audit or processing')
+          ) || null;
+          
+          // Find Provider Speciality column (for Claims by Provider Speciality chart)
+          // Try exact match first, then partial matches
+          actualProviderSpecialityColumn = allKeys.find(k => 
+            k.toLowerCase().trim() === 'claims by provider speciality'
+          ) || allKeys.find(k => 
+            k.toLowerCase().trim() === 'provider speciality'
+          ) || allKeys.find(k => 
+            k.toLowerCase().includes('claims') && k.toLowerCase().includes('provider') && k.toLowerCase().includes('speciality')
+          ) || allKeys.find(k => 
+            k.toLowerCase().includes('provider') && k.toLowerCase().includes('speciality')
+          ) || null;
+          
           console.log('Detected Audit Flag column:', actualAuditFlagColumn);
+          console.log('Detected Audit or Processing Action column:', actualAuditOrProcessingActionColumn);
+          console.log('Detected Provider Speciality column:', actualProviderSpecialityColumn);
           console.log('Detected Appeal ID column:', actualAppealIdColumn);
           console.log('Detected Appeal Reason column:', actualAppealReasonColumn);
           console.log('Detected Benefit plan update date column:', actualBenefitPlanUpdateDateColumn);
@@ -222,18 +249,58 @@ export function useClaimsData() {
           const amount = parseFloat(String(row['clmAmt_totChrgAmt'] || 0));
           const allowAmount = parseFloat(String(row['clmAmt_totAllowAmt'] || 0));
           
+          // Try to find claim ID with variations (clmId, Claim ID, Claim Number, Claim Identifier, etc.)
+          // Works for both Claim Data 2 and Facets Claim Data - same implementation
+          let claimIdValue = row['clmId'] || row['Claim ID'] || row['ClaimID'] || row['claimId'] || row['CLAIM_ID'] || 
+                            row['Claim Number'] || row['ClaimNumber'] || row['Claim_Number'] || row['claim_number'] || 
+                            row['Claim Identifier'] || row['ClaimIdentifier'] || row['claim_identifier'] || row['CLAIM_IDENTIFIER'] ||
+                            row['Source'] || row['source'] || row['SOURCE'] || '';
+          
+          // If still empty, try case-insensitive search for claim identifier columns
+          if (!claimIdValue) {
+            const rowKeys = Object.keys(row);
+            const claimIdKey = rowKeys.find(key => {
+              const keyLower = key.toLowerCase();
+              return (keyLower.includes('claim') && (keyLower.includes('id') || keyLower.includes('number') || keyLower.includes('num') || keyLower.includes('identifier'))) ||
+                     keyLower === 'source';
+            });
+            if (claimIdKey) {
+              claimIdValue = row[claimIdKey];
+            }
+          }
+          
           return {
-            clmId: String(row['clmId'] || ''),
-            aaInd: String(row['aaInd'] || 'N'),
+            clmId: String(claimIdValue || '').trim(),
+            aaInd: String(
+              row['Auto Adjudication Indicator'] || 
+              row['autoAdjudicationIndicator'] || 
+              row['aaInd'] || 
+              'N'
+            ),
             priority: String(row['Priority'] || row['priority'] || getRiskLevel(score)),
             score: score,
             acctNum: String(row['acctNum'] || ''),
             billTyCd: String(row['billTyCd'] || ''),
             clmBeginDt: convertExcelDate(row['clmBeginDt']),
             clmEndDt: convertExcelDate(row['clmEndDt']),
-            clmTyCd: String(row['clmTyCd'] || ''),
-            formTyCd: String(row['formTyCd'] || ''),
-            paperEdiCd: String(row['paperEdiCd'] || ''),
+            clmTyCd: String(
+              row['Provider Network Code'] || 
+              row['providerNetworkCode'] || 
+              row['clmTyCd'] || 
+              ''
+            ),
+            formTyCd: String(
+              row['Claim Form Type Code'] || 
+              row['claimFormTypeCode'] || 
+              row['formTyCd'] || 
+              ''
+            ),
+            paperEdiCd: String(
+              row['Paper or EDI Submission Code'] || 
+              row['paperEdiCd'] || 
+              row['Paper or EDI'] ||
+              ''
+            ),
             rcvdTs: convertExcelDate(row['rcvdTs']),
             billProv_city: String(row['billProv_city(pie chart)'] || row['billProv_city'] || ''),
             billProv_dervCpfTyCd2: String(row['billProv_dervCpfTyCd2'] || ''),
@@ -244,7 +311,12 @@ export function useClaimsData() {
             clmAmtRange: getAmountRange(amount),
             patDemo_patAge: parseInt(String(row['patDemo_patAge'] || 0)),
             patDemo_patGndr: String(row['patDemo_patGndr'] || ''),
-            benopt: String(row['benopt'] || ''),
+            benopt: String(
+              row['Benefit Option'] || 
+              row['benefitOption'] || 
+              row['benopt'] || 
+              ''
+            ),
             billProv_dervParInd: String(row['billProv_dervParInd'] || ''),
             billProv_ntCd: String(row['billProv_ntCd'] || ''),
             auditFlag: (() => {
@@ -296,6 +368,24 @@ export function useClaimsData() {
               // If nothing found, return empty string
               return '';
             })(),
+            auditOrProcessingAction: getColumnValue(row, ['Audit or Processing Action', 'auditOrProcessingAction', 'AuditOrProcessingAction', 'audit or processing action', 'AUDIT OR PROCESSING ACTION', 'Audit_Or_Processing_Action'], actualAuditOrProcessingActionColumn),
+            providerSpeciality: (() => {
+              // Use ONLY "Claims by Provider Speciality" column - no fallbacks
+              // Prioritize the detected column first
+              if (actualProviderSpecialityColumn && row[actualProviderSpecialityColumn] !== null && row[actualProviderSpecialityColumn] !== undefined) {
+                const value = String(row[actualProviderSpecialityColumn]).trim();
+                if (value && value !== '' && value !== 'null' && value !== 'undefined') {
+                  return value;
+                }
+              }
+              // Try other column name variations for "Claims by Provider Speciality"
+              const value = getColumnValue(row, ['Claims by Provider Speciality', 'Provider Speciality', 'providerSpeciality', 'ProviderSpeciality', 'provider speciality', 'PROVIDER SPECIALITY', 'Claims_by_Provider_Speciality'], actualProviderSpecialityColumn);
+              if (value && value.trim() !== '') {
+                return value;
+              }
+              // Return empty string if column not found - do NOT use fallback
+              return '';
+            })(),
             appealReason: getColumnValue(row, ['Appeal Reason', 'appealReason', 'AppealReason', 'appeal reason', 'APPEAL REASON', 'Appeal_Reason'], actualAppealReasonColumn),
             appealId: getColumnValue(row, ['Appeal ID', 'appealId', 'AppealId', 'appeal id', 'APPEAL ID', 'AppealID', 'Appeal_ID'], actualAppealIdColumn),
             benefitPlanUpdateDate: convertExcelDate(getColumnValue(row, ['Benefit plan update date', 'benefitPlanUpdateDate', 'BenefitPlanUpdateDate', 'benefit plan update date', 'BENEFIT PLAN UPDATE DATE', 'Benefit_Plan_Update_Date'], actualBenefitPlanUpdateDateColumn)),
@@ -309,9 +399,25 @@ export function useClaimsData() {
         setClaimsData(claims);
         console.log(`Loaded ${claims.length} claims from Excel file`);
 
-        // Parse Line Data (Sheet 2)
-        const lineSheet = workbook.Sheets[workbook.SheetNames[1]];
-        const lineRaw = XLSX.utils.sheet_to_json<Record<string, unknown>>(lineSheet);
+        // Parse Line Data (Sheet 2) - handle cases where Sheet 2 might not exist
+        let lineRaw: Record<string, unknown>[] = [];
+        if (workbook.SheetNames.length > 1) {
+          const lineSheet = workbook.Sheets[workbook.SheetNames[1]];
+          if (lineSheet) {
+            lineRaw = XLSX.utils.sheet_to_json<Record<string, unknown>>(lineSheet);
+            console.log(`Found ${lineRaw.length} line items in Sheet 2`);
+            
+            // Log available columns in line data sheet for debugging
+            if (lineRaw.length > 0) {
+              const lineColumns = Object.keys(lineRaw[0]);
+              console.log('=== LINE DATA COLUMNS IN EXCEL ===');
+              console.log('Available columns in Sheet 2:', lineColumns);
+              console.log('Sample row data:', lineRaw[0]);
+            }
+          }
+        } else {
+          console.warn('No Sheet 2 found in Excel file, line data will be empty');
+        }
         
         // Helper function for line data dates
         const convertExcelDateForLine = (value: unknown): string => {
@@ -339,31 +445,117 @@ export function useClaimsData() {
           return String(value);
         };
 
-        const lines: LineData[] = lineRaw.map((row) => ({
-          clmId: String(row['clmId'] || ''),
-          chrgAmt: parseFloat(String(row['chrgAmt'] || 0)),
-          clmLnNum: parseInt(String(row['clmLnNum'] || 0)),
-          ediLnNum: parseInt(String(row['ediLnNum'] || 0)),
-          coinsAmt: parseFloat(String(row['coinsAmt'] || 0)),
-          cvrdAmt: parseFloat(String(row['cvrdAmt'] || 0)),
-          dedAmt: parseFloat(String(row['dedAmt'] || 0)),
-          lnBeginDt: convertExcelDateForLine(row['lnBeginDt']),
-          lnEndDt: convertExcelDateForLine(row['lnEndDt']),
-          ndc: String(row['ndc'] || ''),
-          paidAmt: parseFloat(String(row['paidAmt'] || 0)),
-          posCd: String(row['posCd'] || ''),
-          preAuthInd: String(row['preAuthInd'] || ''),
-          revnuCd: String(row['revnuCd'] || ''),
-          rmTyp: String(row['rmTyp'] || ''),
-          serviceId: String(row['serviceId'] || ''),
-          procCd: String(row['procCd'] || ''),
-          diagCd: String(row['diagCd'] || ''),
-          rncCd: String(row['rncCd'] || ''),
-          drugUnits: String(row['drugUnits'] || ''),
-          drugUom: String(row['drugUom'] || ''),
-          count: parseInt(String(row['count'] || 0)),
-          uom: String(row['uom'] || ''),
-        }));
+        // Helper function to get column value with multiple name variations
+        const getLineColumnValue = (row: Record<string, unknown>, possibleNames: string[]): string | number => {
+          const rowKeys = Object.keys(row);
+          
+          // First try exact matches
+          for (const name of possibleNames) {
+            if (row.hasOwnProperty(name)) {
+              const rawValue = row[name];
+              if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+                return rawValue;
+              }
+            }
+          }
+          
+          // Try case-insensitive match
+          for (const possibleName of possibleNames) {
+            const foundKey = rowKeys.find(key => {
+              const keyLower = key.toLowerCase().trim();
+              const nameLower = possibleName.toLowerCase().trim();
+              return keyLower === nameLower || 
+                     keyLower.replace(/\s+/g, ' ') === nameLower.replace(/\s+/g, ' ') ||
+                     keyLower.replace(/[_\s]/g, '') === nameLower.replace(/[_\s]/g, '');
+            });
+            if (foundKey) {
+              const rawValue = row[foundKey];
+              if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+                return rawValue;
+              }
+            }
+          }
+          
+          // Try partial matches (contains)
+          for (const possibleName of possibleNames) {
+            const nameParts = possibleName.toLowerCase().split(/[\s_]+/).filter(p => p.length > 2);
+            if (nameParts.length > 0) {
+              const foundKey = rowKeys.find(key => {
+                const keyLower = key.toLowerCase();
+                return nameParts.every(part => keyLower.includes(part));
+              });
+              if (foundKey) {
+                const rawValue = row[foundKey];
+                if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+                  return rawValue;
+                }
+              }
+            }
+          }
+          
+          return '';
+        };
+
+        const lines: LineData[] = lineRaw.map((row, index) => {
+          // Try to find clmId with variations (clmId, Claim ID, Claim Number, Claim Identifier, etc.)
+          // This is critical for matching line items to claims
+          // Works for both Claim Data 2 and Facets Claim Data - same implementation
+          // Includes "Claim Identifier" column which is used in Facets Claim Data Excel
+          const clmIdValue = getLineColumnValue(row, [
+            'clmId', 'Claim ID', 'ClaimID', 'claimId', 'CLAIM_ID', 
+            'Claim Number', 'ClaimNumber', 'Claim_Number', 'claim_number',
+            'Claim Identifier', 'ClaimIdentifier', 'claim_identifier', 'CLAIM_IDENTIFIER',
+            'CLM_ID', 'Clm ID', 'ClmID', 'Claim_Number', 'claim_number',
+            'Source', 'source', 'SOURCE' // Some Excel files use "Source" column
+          ]);
+          
+          let clmId = String(clmIdValue || '').trim();
+          
+          // If still empty, try to find any column that might contain claim identifier
+          if (!clmId) {
+            const rowKeys = Object.keys(row);
+            // Look for columns that might be claim identifiers
+            const possibleClaimIdKeys = rowKeys.filter(key => {
+              const keyLower = key.toLowerCase();
+              return keyLower.includes('claim') && (keyLower.includes('id') || keyLower.includes('number') || keyLower.includes('num'));
+            });
+            if (possibleClaimIdKeys.length > 0) {
+              clmId = String(row[possibleClaimIdKeys[0]] || '').trim();
+            }
+          }
+          
+          // Log if claim ID is missing for debugging
+          if (!clmId && index < 5) {
+            console.warn(`Line item at index ${index} has no claim ID. Row keys:`, Object.keys(row));
+            console.warn(`Sample row values:`, row);
+          }
+          
+          return {
+            clmId: clmId,
+            chrgAmt: parseFloat(String(getLineColumnValue(row, ['chrgAmt', 'Chrg Amt', 'Charge Amount', 'chrgAmt', 'CHRG_AMT']) || 0)),
+            clmLnNum: parseInt(String(getLineColumnValue(row, ['clmLnNum', 'Clm Ln Num', 'Claim Line Number', 'clmLnNum', 'CLM_LN_NUM']) || 0)),
+            ediLnNum: parseInt(String(getLineColumnValue(row, ['ediLnNum', 'Edi Ln Num', 'EDI Line Number', 'ediLnNum', 'EDI_LN_NUM']) || 0)),
+            coinsAmt: parseFloat(String(getLineColumnValue(row, ['coinsAmt', 'Coins Amt', 'Coinsurance Amount', 'coinsAmt', 'COINS_AMT']) || 0)),
+            cvrdAmt: parseFloat(String(getLineColumnValue(row, ['cvrdAmt', 'Cvrd Amt', 'Covered Amount', 'cvrdAmt', 'CVRD_AMT']) || 0)),
+            dedAmt: parseFloat(String(getLineColumnValue(row, ['dedAmt', 'Ded Amt', 'Deductible Amount', 'dedAmt', 'DED_AMT']) || 0)),
+            lnBeginDt: convertExcelDateForLine(getLineColumnValue(row, ['lnBeginDt', 'Ln Begin Dt', 'Line Begin Date', 'lnBeginDt', 'LN_BEGIN_DT'])),
+            lnEndDt: convertExcelDateForLine(getLineColumnValue(row, ['lnEndDt', 'Ln End Dt', 'Line End Date', 'lnEndDt', 'LN_END_DT'])),
+            ndc: String(getLineColumnValue(row, ['ndc', 'NDC', 'Ndc', 'National Drug Code']) || ''),
+            paidAmt: parseFloat(String(getLineColumnValue(row, ['paidAmt', 'Paid Amt', 'Paid Amount', 'paidAmt', 'PAID_AMT']) || 0)),
+            posCd: String(getLineColumnValue(row, ['posCd', 'Pos Cd', 'Place of Service Code', 'posCd', 'POS_CD']) || ''),
+            preAuthInd: String(getLineColumnValue(row, ['preAuthInd', 'Pre Auth Ind', 'Pre Authorization Indicator', 'preAuthInd', 'PRE_AUTH_IND']) || ''),
+            revnuCd: String(getLineColumnValue(row, ['revnuCd', 'Revnu Cd', 'Revenue Code', 'revnuCd', 'REVNU_CD']) || ''),
+            rmTyp: String(getLineColumnValue(row, ['rmTyp', 'Rm Typ', 'Room Type', 'rmTyp', 'RM_TYP']) || ''),
+            serviceId: String(getLineColumnValue(row, ['serviceId', 'Service Id', 'Service ID', 'serviceId', 'SERVICE_ID']) || ''),
+            procCd: String(getLineColumnValue(row, ['procCd', 'Proc Cd', 'Procedure Code', 'procCd', 'PROC_CD']) || ''),
+            diagCd: String(getLineColumnValue(row, ['diagCd', 'Diag Cd', 'Diagnosis Code', 'diagCd', 'DIAG_CD']) || ''),
+            rncCd: String(getLineColumnValue(row, ['rncCd', 'Rnc Cd', 'Reason Not Covered Code', 'rncCd', 'RNC_CD']) || ''),
+            drugUnits: String(getLineColumnValue(row, ['drugUnits', 'Drug Units', 'drugUnits', 'DRUG_UNITS']) || ''),
+            drugUom: String(getLineColumnValue(row, ['drugUom', 'Drug UOM', 'Drug Unit of Measure', 'drugUom', 'DRUG_UOM']) || ''),
+            count: parseInt(String(getLineColumnValue(row, ['count', 'Count', 'COUNT']) || 0)),
+            uom: String(getLineColumnValue(row, ['uom', 'UOM', 'Unit of Measure', 'uom', 'UOM']) || ''),
+          };
+        });
 
         // Validate line data for issues
         const lineDataIssues: string[] = [];
@@ -442,30 +634,74 @@ export function useClaimsData() {
         setLineData(lines);
         console.log(`Loaded ${lines.length} line items from Excel file`);
         console.log(`Total claims: ${claims.length}, Claims with line data: ${linesByClaim.size}`);
+        
+        // Log sample claim IDs from both sheets for debugging
+        if (claims.length > 0 && lines.length > 0) {
+          const sampleClaimIds = [...new Set(claims.slice(0, 5).map(c => c.clmId))];
+          const sampleLineClaimIds = [...new Set(lines.slice(0, 10).map(l => l.clmId).filter(id => id))];
+          console.log('Sample Claim IDs from Sheet 1:', sampleClaimIds);
+          console.log('Sample Claim IDs from Sheet 2:', sampleLineClaimIds);
+          console.log('Matching claim IDs:', sampleClaimIds.filter(id => sampleLineClaimIds.includes(id)));
+        }
+        
         setLoading(false);
       } catch (err) {
-        setError('Failed to load claims data');
+        setError(`Failed to load claims data from ${excelFileName}`);
         setLoading(false);
         console.error('Error loading Excel data:', err);
-        console.error('Please check that the Excel file exists at: /data/Masked Sample Data - claim & line.xlsx');
+        console.error(`Please check that the Excel file exists at: /data/${excelFileName}`);
       }
     }
 
     loadData();
-  }, []);
+  }, [excelFileName]);
 
   const filterOptions = useMemo(() => {
+    // For Facets Claim Data, use hardcoded filterOptions (same as Claim Data 2) for UI purposes
+    if (excelFileName === 'Facets_Claim Data.xlsx') {
+      return {
+        aaInd: ['N', 'Y'], // Manual adjudication, Auto Adjudicated
+        clmTyCd: ['In Network', 'Out of Network'], // Provider Network code options
+        formTyCd: ['H', 'U', 'I', 'O'], // Professional, Institutional, Inpatient, Outpatient
+        claimStatus: ['Auto Adjudicated queue', 'Manual Adjudication queue', 'Paid'], // Claim Status options
+      };
+    }
+    
+    // For Claim Data 2, use actual data from Excel
+    // Normalize aaInd values to avoid duplicates (N/n -> N, Y/y -> Y, Manual -> N, Auto -> Y)
+    const normalizedAaInd = claimsData.map(c => {
+      const value = c.aaInd?.trim() || '';
+      const lowerValue = value.toLowerCase();
+      if (lowerValue === 'n' || lowerValue.includes('manual')) {
+        return 'N';
+      } else if (lowerValue === 'y' || lowerValue.includes('auto')) {
+        return 'Y';
+      }
+      return value;
+    });
+    
     return {
-      aaInd: [...new Set(claimsData.map(c => c.aaInd))].filter(Boolean).sort(),
+      aaInd: [...new Set(normalizedAaInd)].filter(Boolean).sort(),
       clmTyCd: [...new Set(claimsData.map(c => c.clmTyCd))].filter(Boolean).sort(),
       formTyCd: [...new Set(claimsData.map(c => c.formTyCd))].filter(Boolean).sort(),
       claimStatus: [...new Set(claimsData.map(c => c.claimStatus))].filter(Boolean).sort(),
     };
-  }, [claimsData]);
+  }, [claimsData, excelFileName]);
 
   const filteredClaims = useMemo(() => {
     return claimsData.filter(claim => {
-      if (filters.aaInd.length > 0 && !filters.aaInd.includes(claim.aaInd)) return false;
+      if (filters.aaInd.length > 0) {
+        // Normalize the claim's aaInd value for comparison
+        const claimAaInd = claim.aaInd?.trim() || '';
+        const lowerValue = claimAaInd.toLowerCase();
+        let normalizedClaimAaInd = claimAaInd;
+        if (lowerValue === 'n' || lowerValue.includes('manual')) {
+          normalizedClaimAaInd = 'N';
+        } else if (lowerValue === 'y' || lowerValue.includes('auto')) {
+          normalizedClaimAaInd = 'Y';
+        }
+        if (!filters.aaInd.includes(normalizedClaimAaInd)) return false;
+      }
       if (filters.clmTyCd.length > 0 && !filters.clmTyCd.includes(claim.clmTyCd)) return false;
       if (filters.formTyCd.length > 0 && !filters.formTyCd.includes(claim.formTyCd)) return false;
       if (filters.priority.length > 0 && !filters.priority.includes(claim.priority)) return false;
@@ -499,7 +735,20 @@ export function useClaimsData() {
   }, [filteredClaims]);
 
   const getLineItemsForClaim = (claimId: string) => {
-    return lineData.filter(line => line.clmId === claimId);
+    // Normalize claim IDs for matching (trim and case-insensitive if needed)
+    const normalizedClaimId = claimId.trim();
+    return lineData.filter(line => {
+      const normalizedLineClaimId = line.clmId.trim();
+      // Try exact match first
+      if (normalizedLineClaimId === normalizedClaimId) {
+        return true;
+      }
+      // Try case-insensitive match
+      if (normalizedLineClaimId.toLowerCase() === normalizedClaimId.toLowerCase()) {
+        return true;
+      }
+      return false;
+    });
   };
 
   return {

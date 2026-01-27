@@ -24,6 +24,8 @@ export interface ClaimData {
   billProv_dervParInd: string;
   billProv_ntCd: string;
   auditFlag: string;
+  auditOrProcessingAction: string;
+  providerSpeciality: string;
   appealReason: string;
   appealId: string;
   benefitPlanUpdateDate: string;

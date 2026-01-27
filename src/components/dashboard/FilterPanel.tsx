@@ -46,14 +46,27 @@ export function FilterPanel() {
           value={filters.aaInd[0] || 'all'}
           onValueChange={(value) => handleFilterChange('aaInd', value)}
         >
-          <SelectTrigger className="w-[140px] h-9 text-sm shrink-0">
-            <SelectValue placeholder="Adjudication" />
+          <SelectTrigger className="w-[220px] h-9 text-sm shrink-0">
+            <SelectValue placeholder="Auto Adjudication Indicator" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Adjudication</SelectItem>
-            {filterOptions.aaInd.map(option => (
-              <SelectItem key={option} value={option}>{option}</SelectItem>
-            ))}
+            <SelectItem value="all">Auto Adjudication Indicator</SelectItem>
+            {filterOptions.aaInd.map(option => {
+              // Map N/Y to readable labels, or use the value as-is if it's already descriptive
+              let displayLabel = option;
+              if (option === 'N' || option.toLowerCase() === 'n') {
+                displayLabel = 'Manual adjudication';
+              } else if (option === 'Y' || option.toLowerCase() === 'y') {
+                displayLabel = 'Auto Adjudicated';
+              } else if (option.toLowerCase().includes('manual')) {
+                displayLabel = 'Manual adjudication';
+              } else if (option.toLowerCase().includes('auto')) {
+                displayLabel = 'Auto Adjudicated';
+              }
+              return (
+                <SelectItem key={option} value={option}>{displayLabel}</SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
 
@@ -66,9 +79,31 @@ export function FilterPanel() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Provider Network code</SelectItem>
-            {filterOptions.clmTyCd.map(option => (
-              <SelectItem key={option} value={option}>{option}</SelectItem>
-            ))}
+            {filterOptions.clmTyCd.map(option => {
+              // Map codes to descriptive names, or use the value as-is if it's already descriptive
+              let displayLabel = option;
+              const upperOption = option.toUpperCase().trim();
+              const lowerOption = option.toLowerCase().trim();
+              
+              // If it's already a descriptive name, use it as-is
+              if (lowerOption.includes('in network') || lowerOption.includes('out of network') || 
+                  lowerOption.includes('innetwork') || lowerOption.includes('outofnetwork')) {
+                displayLabel = option; // Already descriptive, use as-is
+              } else {
+                // Map codes to descriptive names
+                if (upperOption === 'I' || upperOption === 'IN' || lowerOption === 'in') {
+                  displayLabel = 'In Network';
+                } else if (upperOption === 'O' || upperOption === 'OUT' || lowerOption === 'out') {
+                  displayLabel = 'Out of Network';
+                } else if (upperOption === 'N' || lowerOption === 'network') {
+                  // Could be either, but typically 'N' means 'In Network'
+                  displayLabel = 'In Network';
+                }
+              }
+              return (
+                <SelectItem key={option} value={option}>{displayLabel}</SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
 
@@ -76,14 +111,37 @@ export function FilterPanel() {
           value={filters.formTyCd[0] || 'all'}
           onValueChange={(value) => handleFilterChange('formTyCd', value)}
         >
-          <SelectTrigger className="w-[130px] h-9 text-sm shrink-0">
-            <SelectValue placeholder="Form Type" />
+          <SelectTrigger className="w-[180px] h-9 text-sm shrink-0">
+            <SelectValue placeholder="Claim Form Type Code" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Form Type</SelectItem>
-            {filterOptions.formTyCd.map(option => (
-              <SelectItem key={option} value={option}>{option}</SelectItem>
-            ))}
+            <SelectItem value="all">Claim Form Type Code</SelectItem>
+            {filterOptions.formTyCd.map(option => {
+              // Map codes to descriptive names, or use the value as-is if it's already descriptive
+              let displayLabel = option;
+              const upperOption = option.toUpperCase().trim();
+              const lowerOption = option.toLowerCase().trim();
+              
+              // If it's already a descriptive name, use it as-is
+              if (lowerOption.includes('professional') || lowerOption.includes('institutional') || 
+                  lowerOption.includes('inpatient') || lowerOption.includes('outpatient')) {
+                displayLabel = option; // Already descriptive, use as-is
+              } else {
+                // Map codes to descriptive names
+                if (upperOption === 'H') {
+                  displayLabel = 'Professional';
+                } else if (upperOption === 'U') {
+                  displayLabel = 'Institutional';
+                } else if (upperOption === 'I') {
+                  displayLabel = 'Inpatient';
+                } else if (upperOption === 'O') {
+                  displayLabel = 'Outpatient';
+                }
+              }
+              return (
+                <SelectItem key={option} value={option}>{displayLabel}</SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
 
